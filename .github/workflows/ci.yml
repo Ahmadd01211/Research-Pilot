@@ -1,0 +1,32 @@
+name: Verify
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint && npm run typecheck && npm test && npm run build
+      - run: npm run api:generate && git diff --exit-code -- src/lib/api/schema.d.ts
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f compose.test.yaml build tests
+      - run: docker compose -f compose.test.yaml run --rm --no-deps tests ruff check .
+      - run: docker compose -f compose.test.yaml run --rm --no-deps tests mypy
+      - run: docker run --rm --network none --user "$(id -u):$(id -g)" --mount type=bind,source="$PWD/docs",target=/output researchpilot-greenfield-backend:dev python -m scripts.export_openapi /output/openapi.json
+      - run: git diff --exit-code -- docs/openapi.json
+      - run: docker compose -f compose.test.yaml up --abort-on-container-exit --exit-code-from tests
+      - if: always()
+        run: docker compose -f compose.test.yaml down

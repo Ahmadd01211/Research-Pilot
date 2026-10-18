@@ -1,0 +1,73 @@
+name: researchpilot_greenfield
+x-backend: &backend
+  image: researchpilot-greenfield-backend:dev
+  build: ./backend
+  environment: &environment
+    RP_DATABASE_URL: postgresql+psycopg://rp:${POSTGRES_PASSWORD:?Create .env from .env.example}@db:5432/rp_greenfield
+    RP_REDIS_URL: redis://redis:6379/0
+    RP_PUBLIC_ORIGIN: http://localhost:3100
+    RP_ENVIRONMENT: development
+  init: true
+  security_opt: [no-new-privileges:true]
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: rp
+      POSTGRES_DB: rp_greenfield
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Create .env from .env.example}
+    volumes: [postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U rp -d rp_greenfield']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7.4.2-alpine
+    command: [redis-server, --appendonly, 'yes']
+    volumes: [redis:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    <<: *backend
+    command: [alembic, upgrade, head]
+    depends_on:
+      db: {condition: service_healthy}
+  api:
+    <<: *backend
+    ports: ['127.0.0.1:8100:8000']
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://localhost:8000/api/v1/health/ready", timeout=3)']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  worker:
+    <<: *backend
+    command: [celery, -A, app.workers.celery_app:celery_app, worker, -Q, 'documents,embeddings,analysis,exports', --concurrency=2, --loglevel=WARNING]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD-SHELL, 'celery -A app.workers.celery_app:celery_app inspect ping --destination "celery@$${HOSTNAME}" --timeout 3']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  web:
+    build: ./frontend
+    ports: ['127.0.0.1:3100:8080']
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:8080/login || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+volumes:
+  postgres:
+  redis:

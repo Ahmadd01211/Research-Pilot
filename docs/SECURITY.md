@@ -1,0 +1,13 @@
+# Identity security baseline and limits
+
+Implemented in this foundation: Argon2id hashes, generic credential failure, random opaque sessions stored as hashes, absolute/idle expiry, rotation on login, revocation on logout, HttpOnly/SameSite cookies, production Secure-cookie/HTTPS configuration checks, Origin/CSRF checks, user-bound profile access, rate counters and private API-secret configuration. Frontend session state is in memory, not localStorage.
+
+Built Nginx runs unprivileged, limits request bodies and supplies same-origin CSP/frame/content-type/referrer/permission headers. The local API is loopback-only; PostgreSQL and Redis have no host ports. Generated local database credentials are ignored by Git and were not printed. No paid AI provider or real research documents are connected.
+
+Verified: eight PostgreSQL/Redis-backed identity tests; ten frontend component/client tests; the built-app HTTP registration/login/profile/logout flow, CSRF/origin denial and revoked-cookie replay denial. No browser screenshot automation. One upstream Starlette TestClient/httpx deprecation warning remains; migrate the test transport deliberately during a dependency update.
+
+Before public deployment: implement password reset and verified email delivery, define account verification/recovery and session management policies, decide whether the newer access/refresh-token requirement replaces opaque sessions, test the production Secure-cookie configuration end to end, establish trusted-proxy/client-IP handling and production abuse limits, add retention/backup/restore procedures, pin/scan container images, scan Python dependencies, and review the full deployment threat model.
+
+The current backend IP bucket sees the API peer behind a reverse proxy, so it is a conservative shared bound rather than a reliable per-end-user-IP policy. Email-keyed login limits are separate. Resolve trusted forwarding/edge limits before multi-user public exposure; never trust arbitrary client-supplied forwarding headers.
+
+The npm runtime dependency audit reported zero vulnerabilities at the time of this check. This is not a comprehensive security audit. Development cookies intentionally do not use Secure on local HTTP; never carry that setting into production.

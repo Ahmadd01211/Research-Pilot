@@ -1,0 +1,33 @@
+name: researchpilot_greenfield_tests
+services:
+  db-test:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: rp_test
+      POSTGRES_DB: rp_greenfield_test
+      POSTGRES_PASSWORD: synthetic-test-only
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U rp_test -d rp_greenfield_test']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis-test:
+    image: redis:7.4.2-alpine
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  tests:
+    image: researchpilot-greenfield-backend:dev
+    build: ./backend
+    environment:
+      RP_DATABASE_URL: postgresql+psycopg://rp_test:synthetic-test-only@db-test:5432/rp_greenfield_test
+      RP_REDIS_URL: redis://redis-test:6379/0
+      RP_ENVIRONMENT: test
+      RP_PUBLIC_ORIGIN: http://localhost:3100
+    command: [pytest, -p, no:cacheprovider]
+    depends_on:
+      db-test: {condition: service_healthy}
+      redis-test: {condition: service_healthy}

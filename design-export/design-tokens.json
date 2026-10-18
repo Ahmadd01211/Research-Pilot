@@ -1,0 +1,64 @@
+{
+  "name": "Scholarly Blue",
+  "version": "1.0.0",
+  "color": {
+    "background": "#F8FAFC",
+    "surface": "#FFFFFF",
+    "text": "#14213D",
+    "textSecondary": "#62718A",
+    "textSubtle": "#68758C",
+    "primary": "#3457D5",
+    "primaryHover": "#2948BA",
+    "primarySubtle": "#EEF2FF",
+    "teal": "#24736C",
+    "tealSubtle": "#EDF7F4",
+    "warning": "#946315",
+    "warningSubtle": "#FFF8E8",
+    "danger": "#AC3747",
+    "dangerSubtle": "#FFF0F2",
+    "border": "#E5E9F0",
+    "borderStrong": "#CBD3E0"
+  },
+  "font": {
+    "heading": "Manrope",
+    "interface": "DM Sans",
+    "document": "Georgia"
+  },
+  "spacing": [
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    32,
+    40,
+    48
+  ],
+  "radius": {
+    "control": 8,
+    "panel": 12,
+    "dialog": 14
+  },
+  "breakpoints": {
+    "mobile": 760,
+    "tablet": 1000,
+    "compactDesktop": 1200,
+    "wideDesktop": 1500
+  },
+  "type": {
+    "pageHeading": 28,
+    "sectionHeading": 19,
+    "cardHeading": 15,
+    "body": 14,
+    "table": 12,
+    "label": 11,
+    "metadata": 10
+  },
+  "evidence": {
+    "sourceSupported": "teal",
+    "interpretation": "blue",
+    "uncertain": "warning",
+    "failed": "danger"
+  }
+}
