@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -14,6 +15,7 @@ class Settings(BaseSettings):
     session_hours: int = 24
     session_idle_minutes: int = 60
     rate_namespace: str = "rp:identity"
+    storage_root: Path = Path("/var/lib/researchpilot")
 
     @model_validator(mode="after")
     def validate_environment(self) -> "Settings":

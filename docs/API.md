@@ -34,3 +34,12 @@ Registration redirects to sign-in after success rather than chaining registratio
 All mutations reuse session/Origin/CSRF protection. Ownership is never accepted from input. Same creation key/same payload returns the existing project; changed payload or a removed project returns 409. Stale edits return 409 without changing data. Edit responses explicitly require the fields the frontend consumes. Project/activity creation and changes commit atomically.
 
 The web proxy request limit is 256 KiB to accommodate valid bounded project metadata. This is not a PDF upload allowance; the future document endpoint needs its own validated limits and processing pipeline.
+
+## Private PDF library (migration 0003)
+
+- GET `/api/v1/projects/{project_id}/documents?offset=0&limit=25`: owned page, limit 1–50, offset 0–100, actual total.
+- POST same collection with `?filename=Original.pdf`: raw application/pdf body, session/Origin/CSRF required, ≤20 MiB, PDF signature screening. 200 returns `{document, duplicate}` for both newly stored and duplicate originals. Identical bytes reuse the project document; no cross-project hash discovery. 413 too large, 415 wrong content type, 422 invalid name/signature, 409 archive/quota, 404 inaccessible project.
+- GET `.../documents/{document_id}`: owned metadata; status is Stored only. No storage keys/checksums exposed.
+- GET `.../documents/{document_id}/download`: authenticated attachment; safe 503 if original unavailable. Removed projects return 404; archives allow read/download.
+
+No parsing, replacement, deletion, processing retry or evidence-preview endpoint is implemented in this storage slice. Never interpret signature screening as structural PDF validation.

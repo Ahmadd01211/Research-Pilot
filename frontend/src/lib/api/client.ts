@@ -1,5 +1,9 @@
 import type { components } from './schema';
 export type User = components['schemas']['UserRead'];
+export async function uploadPdf<T>(path: string, file: File): Promise<T> {
+  const token = await read<{ csrf_token: string }>('/auth/csrf');
+  return decode<T>(await fetch(`/api/v1${path}?filename=${encodeURIComponent(file.name)}`, { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'content-type': 'application/pdf', 'x-csrf-token': token.csrf_token }, body: file }));
+}
 type Json = Record<string, unknown>;
 export class ApiError extends Error {
   constructor(message: string, public status: number) { super(message); this.name = 'ApiError'; }

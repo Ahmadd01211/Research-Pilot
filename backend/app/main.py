@@ -15,6 +15,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.responses import Response
 
 from app.core.config import Settings, get_settings
+from app.modules.documents.router import router as documents_router
 from app.modules.identity.router import router
 from app.modules.projects.router import router as projects_router
 
@@ -28,7 +29,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         engine = create_engine(config.database_url.get_secret_value(), pool_pre_ping=True)
         app.state.session_factory = sessionmaker(engine, expire_on_commit=False)
-        app.state.redis = Redis.from_url(config.redis_url.get_secret_value(), socket_timeout=2, socket_connect_timeout=2)
+        app.state.redis = Redis.from_url(
+            config.redis_url.get_secret_value(), socket_timeout=2, socket_connect_timeout=2
+        )
         app.state.engine = engine
         try:
             yield
@@ -39,14 +42,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="ResearchPilot API", version="0.1.0", lifespan=lifespan)
     app.state.settings = config
 
-    def problem(request: Request, status: int, detail: str, headers: Mapping[str, str] | None = None) -> JSONResponse:
-        return JSONResponse(status_code=status, media_type="application/problem+json", headers=headers,
-            content={"type": "about:blank", "title": "Request failed", "status": status,
-                     "detail": detail, "instance": request.url.path,
-                     "request_id": getattr(request.state, "request_id", "unknown")})
+    def problem(
+        request: Request, status: int, detail: str, headers: Mapping[str, str] | None = None
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status,
+            media_type="application/problem+json",
+            headers=headers,
+            content={
+                "type": "about:blank",
+                "title": "Request failed",
+                "status": status,
+                "detail": detail,
+                "instance": request.url.path,
+                "request_id": getattr(request.state, "request_id", "unknown"),
+            },
+        )
 
     @app.middleware("http")
-    async def request_context(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    async def request_context(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         request.state.request_id = str(uuid4())
         response = await call_next(request)
         response.headers["X-Request-ID"] = request.state.request_id
@@ -63,10 +79,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # Do not serialize Pydantic's input field: it may contain a raw password.
         return problem(request, 422, "Check the submitted fields and try again")
 
+    @app.exception_handler(OSError)
     @app.exception_handler(SQLAlchemyError)
     @app.exception_handler(RedisError)
     async def infrastructure_error(request: Request, error: Exception) -> JSONResponse:
-        logger.warning("dependency_unavailable request_id=%s category=%s", request.state.request_id, type(error).__name__)
+        logger.warning(
+            "dependency_unavailable request_id=%s category=%s",
+            request.state.request_id,
+            type(error).__name__,
+        )
         return problem(request, 503, "Service temporarily unavailable")
 
     @app.get("/api/v1/health/live", tags=["operations"])
@@ -77,10 +98,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def ready() -> dict[str, str]:
         def probe() -> None:
             with app.state.engine.connect() as connection:
-                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0002"
+                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0003"
                 connection.execute(text("SELECT id, token_hash, csrf_hash FROM sessions LIMIT 0"))
-                connection.execute(text("SELECT id, owner_id, revision FROM research_projects LIMIT 0"))
+                connection.execute(
+                    text("SELECT id, owner_id, revision FROM research_projects LIMIT 0")
+                )
+                connection.execute(text("SELECT id, project_id, sha256 FROM documents LIMIT 0"))
             app.state.redis.ping()
+
         try:
             await run_in_threadpool(probe)
         except Exception:
@@ -89,4 +114,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(router)
     app.include_router(projects_router)
+    app.include_router(documents_router)
     return app

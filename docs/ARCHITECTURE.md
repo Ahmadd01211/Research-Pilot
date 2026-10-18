@@ -23,3 +23,7 @@ Long-running document/RAG work is not implemented yet. Keep future modules behin
 `app/modules/projects` now owns project metadata, questions/objectives and activity. Routes inject the current user/database and delegate to services. Services own transactions, authorization, idempotency and lifecycle rules; models/constraints protect persistence invariants. React feature components consume generated API types and refresh server-state queries after successful operations.
 
 No Celery task is needed for a short project transaction. The document-processing slice will introduce durable jobs/outbox and storage after project context is established. See `learning/01-research-projects.md` for the code walkthrough and ADR 0003 for tradeoffs.
+
+## Private original storage — 19 October 2026
+
+`app/modules/documents` implements upload/list/metadata/download within owned projects. An API-only `papers` named volume stores UUID-addressed originals through LocalStorage. PostgreSQL stores immutable metadata, project-scoped checksum uniqueness and activity. Raw upload streaming is bounded; finalization shares the project lifecycle lock. Migration 0003 adds documents without rewriting applied migrations. React's project library uses generated types and real server state. No Celery tasks run yet: Stored does not mean parsed or indexed. See ADR 0004 and learning/02-private-pdf-library.md.

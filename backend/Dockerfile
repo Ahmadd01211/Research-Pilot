@@ -2,7 +2,7 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1 RUFF_CACHE_DIR=/tmp/ruff MYPY_CACHE_DIR=/tmp/mypy
 WORKDIR /srv
 COPY requirements.lock .
-RUN pip install --no-cache-dir -r requirements.lock && useradd --create-home appuser
+RUN pip install --no-cache-dir -r requirements.lock && useradd --create-home appuser && mkdir -p /var/lib/researchpilot && chown appuser:appuser /var/lib/researchpilot
 COPY . .
 USER appuser
 EXPOSE 8000

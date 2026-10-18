@@ -39,6 +39,7 @@ services:
   api:
     <<: *backend
     ports: ['127.0.0.1:8100:8000']
+    volumes: [papers:/var/lib/researchpilot]
     depends_on:
       migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
@@ -69,5 +70,6 @@ services:
       timeout: 5s
       retries: 12
 volumes:
+  papers:
   postgres:
   redis:

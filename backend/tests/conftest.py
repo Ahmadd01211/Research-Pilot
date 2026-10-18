@@ -1,5 +1,6 @@
 import os
 from collections.abc import Iterator
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -22,8 +23,8 @@ def migrated() -> Iterator[None]:
 
 
 @pytest.fixture
-def client() -> Iterator[TestClient]:
-    settings = Settings(rate_namespace="rp:test:" + str(uuid4()))
+def client(tmp_path: Path) -> Iterator[TestClient]:
+    settings = Settings(rate_namespace="rp:test:" + str(uuid4()), storage_root=tmp_path / "private")
     engine = create_engine(settings.database_url.get_secret_value())
     with engine.begin() as connection:
         connection.execute(text("TRUNCATE sessions, users CASCADE"))
@@ -38,14 +39,25 @@ def csrf(client: TestClient) -> dict[str, str]:
 
 
 def register(client: TestClient, email: str = "researcher@example.com") -> None:
-    response = client.post("/api/v1/auth/register", headers=csrf(client), json={
-        "email": email, "display_name": "Researcher", "password": "Synthetic-password-123",
-    })
+    response = client.post(
+        "/api/v1/auth/register",
+        headers=csrf(client),
+        json={
+            "email": email,
+            "display_name": "Researcher",
+            "password": "Synthetic-password-123",
+        },
+    )
     assert response.status_code == 201, response.text
 
 
 def login(client: TestClient, email: str = "researcher@example.com") -> None:
-    response = client.post("/api/v1/auth/login", headers=csrf(client), json={
-        "email": email, "password": "Synthetic-password-123",
-    })
+    response = client.post(
+        "/api/v1/auth/login",
+        headers=csrf(client),
+        json={
+            "email": email,
+            "password": "Synthetic-password-123",
+        },
+    )
     assert response.status_code == 200, response.text

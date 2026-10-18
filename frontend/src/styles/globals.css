@@ -14,3 +14,12 @@
 @media(max-width:1200px){.projects-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.project-detail-grid{grid-template-columns:minmax(0,1fr) 245px}.page-heading{flex-wrap:wrap}.project-detail-grid .card{padding:22px}}
 @media(max-width:1000px){.project-detail-grid{grid-template-columns:1fr}.project-detail-grid>aside{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}.project-info{margin-top:0}.project-form-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.projects-grid{grid-template-columns:1fr}.projects-toolbar{align-items:start;gap:16px}.project-search{width:100%}.project-search input{flex:1;width:0;min-width:0}.project-tabs button{min-height:42px}.project-detail-grid>aside{display:block}.project-info{margin-top:22px}.project-card h2{font-size:17px}.page-heading{gap:18px}.page-heading>.row{flex-shrink:1}.project-form .form-footer>.row{width:100%;justify-content:end}.project-form{padding:22px}.project-empty{padding:44px 23px}.project-empty h2{font-size:19px}.project-dialog{padding:22px}.project-card-meta{font-size:11px}.project-empty>.row{flex-wrap:wrap;justify-content:center}.sidebar nav{overflow:auto}.sidebar nav a{flex-shrink:0}.project-tabs{flex-wrap:wrap}}
+
+/* Research library: semantic table retains column relationships on narrow screens. */
+.library-table-scroll { overflow-x: auto; margin-top: 24px; }
+.library-table { width: 100%; border-collapse: collapse; text-align: left; font-size: .875rem; }
+.library-table th, .library-table td { padding: 16px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+.library-table thead th { font-weight: 600; color: #475569; background: #f8fafc; white-space: nowrap; }
+.library-table tbody th { min-width: 200px; max-width: 380px; overflow-wrap: anywhere; font-weight: 600; }
+.library-table td { white-space: nowrap; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
