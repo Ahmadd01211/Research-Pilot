@@ -1,6 +1,6 @@
 # ResearchPilot
 
-Greenfield academic research workspace. The active frontend is React + strict TypeScript + Vite. This foundation implements identity only; research modules are planned, not simulated. The separate design export contains clearly labeled synthetic examples.
+Greenfield academic research workspace. The active frontend is React + strict TypeScript + Vite. The app implements identity and research projects. PDF/RAG and the other research modules remain planned, not simulated. The separate design export contains clearly labeled synthetic examples.
 
 ## Local development
 
@@ -28,3 +28,5 @@ Tests accept only the explicitly named test database. Development data is never 
 Frontend uses `package-lock.json` and `npm ci`; backend uses generated `requirements.lock`. Compile backend requirements with pip-tools on Python 3.12; review upgrades and rerun all checks. Container base-image tags must be pinned and scanned before a production deployment. No production deployment or paid AI calls are configured.
 
 Read `PROJECT_STATUS.md` for verified behavior and remaining gaps.
+
+For the backend code walkthrough, read `docs/learning/01-research-projects.md`. Repeat local project HTTP checks with `python scripts/smoke_projects.py` (synthetic local accounts only).

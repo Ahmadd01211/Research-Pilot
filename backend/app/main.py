@@ -16,6 +16,7 @@ from starlette.responses import Response
 
 from app.core.config import Settings, get_settings
 from app.modules.identity.router import router
+from app.modules.projects.router import router as projects_router
 
 logger = logging.getLogger("researchpilot")
 
@@ -76,8 +77,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def ready() -> dict[str, str]:
         def probe() -> None:
             with app.state.engine.connect() as connection:
-                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0001"
+                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0002"
                 connection.execute(text("SELECT id, token_hash, csrf_hash FROM sessions LIMIT 0"))
+                connection.execute(text("SELECT id, owner_id, revision FROM research_projects LIMIT 0"))
             app.state.redis.ping()
         try:
             await run_in_threadpool(probe)
@@ -86,4 +88,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ready"}
 
     app.include_router(router)
+    app.include_router(projects_router)
     return app

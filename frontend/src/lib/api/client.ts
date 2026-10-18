@@ -15,7 +15,7 @@ async function decode<T>(response: Response): Promise<T> {
 export async function read<T>(path: string, signal?: AbortSignal): Promise<T> {
   return decode<T>(await fetch(`/api/v1${path}`, { credentials: 'same-origin', cache: 'no-store', signal }));
 }
-export async function mutate<T>(path: string, method: 'POST' | 'PATCH', body?: Json): Promise<T> {
+export async function mutate<T>(path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: Json): Promise<T> {
   const token = await read<{ csrf_token: string }>('/auth/csrf');
   return decode<T>(await fetch(`/api/v1${path}`, { method, credentials: 'same-origin', cache: 'no-store', headers: { 'content-type': 'application/json', 'x-csrf-token': token.csrf_token }, body: body ? JSON.stringify(body) : undefined }));
 }

@@ -1,37 +1,32 @@
 # ResearchPilot project status
 
-Updated: 18 October 2026.
+Updated: 18 October 2026. Branch: feat/research-projects. The tested Vite/identity foundation is checkpointed in local Git. No remote/PR or public deployment exists.
 
-## Active application
+## Working local application
 
-React + strict TypeScript + Vite frontend; React Router; FastAPI modular backend; PostgreSQL/pgvector; Redis; independent Celery worker. The user approved replacing Next.js. Original frontend files are preserved in `docs/archives/frontend-nextjs-before-vite.zip`. Working branch: `feat/vite-foundation` (new local repository; no remote or PR created).
+http://localhost:3100/projects — React/TypeScript/Vite, FastAPI, PostgreSQL/pgvector, Redis and independent Celery worker.
 
-Open the real local app at **http://localhost:3100/register**. Active routes: home, registration, login, authenticated dashboard and profile. Real registration/login, persistent profile edits and revoking logout are implemented. There are no fake projects or AI usage numbers in the live account view.
+Identity/profile was manually accepted by the user. The new projects slice includes create/list/detail/edit, questions/objectives, activity, archive/restore, typed-title-confirmed soft removal, literal search, cursor pagination and actual owned dashboard cards. Edits use revisions; retries use owner-scoped request UUIDs; project changes and activity are transactional. No paper counts, research findings or AI usage are simulated in the real app.
 
-## Verified this turn
+## Verification for projects
 
-- Frontend lint and strict TypeScript checks passed.
-- Ten frontend schema/client/component tests passed.
-- Vite production build passed locally and inside the Node 24 frontend image.
-- Backend Ruff and strict mypy passed (18 source files).
-- Eight real PostgreSQL/Redis-backed identity tests passed, including migration/model parity, hashing, expiry, rotation/revocation, CSRF/origin checks, rate limits and profile isolation.
-- Built Nginx same-origin HTTP smoke passed: deep-route reload/security headers, API readiness, register/login, persistent profile update, CSRF/origin rejection and rejection of a replayed revoked cookie.
-- npm runtime audit reported zero vulnerabilities.
-- API, PostgreSQL, Redis, worker and built frontend reported healthy. This is not proof of future document-processing tasks.
-- One upstream TestClient/httpx deprecation warning remains. Browser visual testing was not automated.
+- Backend Ruff and strict mypy passed (23 source files).
+- 16 PostgreSQL/Redis integration tests passed: eight identity cases and eight project cases including concurrency and rollback. One upstream TestClient/httpx deprecation warning remains.
+- Frontend lint, strict types, all 16 component/client/schema tests and production build passed. Build also passed in the Node 24 container.
+- Built-app HTTP smoke passed: project persistence/retry, edit conflict, CSRF, archive/restore, activity, foreign-account denial and repeated soft removal of its own synthetic project.
+- Migration 0002 applied additively; existing account/session tables preserved. API, database, Redis, worker and web healthy.
+- No browser screenshot automation; user visual acceptance of the projects UI remains pending.
 
-HTTP smoke created one synthetic development account with an ephemeral password; no real user credentials or research data were used or printed. Test services are isolated and stopped after verification; application volumes are preserved.
+## Teaching and references
 
-## Design and references
+Read docs/learning/01-research-projects.md for actual code flow, schema/service boundaries, authorization, transactions, idempotency, optimistic concurrency, pagination and alternatives. ADR 0003 records project decisions. The twelve user reference images remain unchanged, with findings in docs/REFERENCE_IMAGE_REVIEW.md. The earlier synthetic design export remains separate from the real application.
 
-The responsive design preview remains separate at `design-export/` (http://localhost:3200 while its preview server runs). The user manually accepted its responsiveness and navigation. All twelve images in `frontend example layout` were inspected and left unchanged; see `docs/REFERENCE_IMAGE_REVIEW.md`.
+## Remaining scope
 
-The production app currently implements only the identity slice. The broader prototype remains a clearly labeled synthetic reference; it is not an AI or PDF backend.
+User explicitly approved implementing password recovery later while proceeding with research features. It remains required before public release: real mail delivery, expiring single-use reset tokens, generic account-discovery responses, throttling and session revocation. Opaque cookie sessions remain in place; the newer access/refresh wording still needs its separate decision.
 
-## Deliberate limits / next work
+Next research feature: private PDF library, storage/validation, versions/duplicate handling and durable ingestion, then embeddings/RAG. No document processing, AI inference or manuscript generation is implemented yet.
 
-Password reset, account verification, public-deployment abuse/retention policies and administrative session management remain unimplemented. The previous opaque HttpOnly-cookie session design is retained; the newer access/refresh-token wording needs a separate architecture decision before replacement. See `docs/SECURITY.md` for deployment limits, including trusted-proxy/client-IP behavior.
+Soft deletion is retention, not a backup or a permanent erasure policy. Removed-project recovery/purge UI is not implemented. Production trusted-proxy abuse controls, account verification, backup/restore, dependency/container hardening and metering remain tracked in SECURITY.md.
 
-Next: user tests real registration → login → edit profile → reload → logout. Then complete the next identity requirements and owner-scoped projects, followed by library ingestion and RAG.
-
-No old D: application was accessed, migrated or reused. Reference images and accepted design files were preserved. No application volumes, uploaded documents or user data were deleted.
+Test smoke used synthetic development accounts; only its own synthetic project was soft-removed. No real user project, uploaded document, application Docker volume, design reference or old D: application was deleted or changed by test setup.
