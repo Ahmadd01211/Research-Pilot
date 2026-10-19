@@ -12,7 +12,7 @@ from pdfplumber import __version__ as plumber_version
 from app.modules.documents.figures import figures_on_page, finalize_figures
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v6:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v7:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def numbered_equations(words: list[dict[str, Any]], excluded: set[int]) -> list[list[int]]:

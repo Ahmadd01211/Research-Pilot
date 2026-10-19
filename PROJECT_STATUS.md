@@ -106,3 +106,10 @@ Reader v6 isolates conservative compact display-equation runs ending with a righ
 ## Formula glyph highlight safeguard — 19 October 2026
 Undecodable private-use mathematical glyph boxes are omitted from passage highlighting because the supplied PDF reports some over the following paragraph. Correctly decoded formula tokens still highlight; all extracted symbols remain inspectable. This is partial highlighting, not repaired glyph geometry or guaranteed formula recognition. No re-extraction is needed for this UI fix. The regression asserts exact included coordinates and excludes the misplaced glyph. All 44 frontend tests, lint/types and production builds pass. Local web deployed.
 
+
+## Numbered regression tables — 19 October 2026
+Reader v7 extends bounded shaded-table detection to sequential numbered model columns, merges adjoining coefficient/error shading and includes partial-width bands. Measured empty gutters must validate all boundaries; blank cells are retained. Supplied paper physical page 18 / printed 392: one seven-column, 20-row table, with coefficients and standard errors together and model blanks preserved. Page-8 two-column table still detected. Header cells have column scope in the reader; empty cells say Blank in source and have no active highlight action. Chunker source-types-v3 includes each column heading with model-table row values and marks blank source cells explicitly. This is conservative recognition of this table family, not universal table parsing or statistical interpretation. Existing uploads require Update readable text and highlights; original and raw text remain unchanged.
+
+
+Verification for regression-table milestone: Ruff/strict mypy, all 54 backend tests and 44 frontend tests, frontend lint/types/build and local container builds passed. Live reader smoke passed after deployment. No browser screenshot automation used; user visual review pending.
+

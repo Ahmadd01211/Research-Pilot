@@ -1,5 +1,6 @@
 """Conservative detection of bounded, alternating-shade, two-column tables."""
 
+import re
 from typing import Any
 
 
@@ -14,7 +15,24 @@ def striped_tables(view: Any, words: list[dict[str, Any]]) -> list[dict[str, Any
             groups.setdefault((round(rect["x0"]), round(rect["x1"])), []).append(rect)
     result = []
     for stripes in groups.values():
+        left_edge, right_edge = stripes[0]["x0"], stripes[0]["x1"]
+        stripes = [
+            rect
+            for rect in rectangles
+            if rect["x0"] >= left_edge - 1
+            and abs(rect["x1"] - right_edge) < 1
+            and rect["x1"] - rect["x0"] > width * 0.55
+            and 5 < rect["bottom"] - rect["top"] < height * 0.15
+        ]
         stripes.sort(key=lambda r: r["top"])
+        # Publishers often draw adjacent rectangles for coefficients and errors.
+        merged: list[dict[str, Any]] = []
+        for stripe in stripes:
+            if merged and abs(merged[-1]["bottom"] - stripe["top"]) < 0.5:
+                merged[-1] = {**merged[-1], "bottom": stripe["bottom"]}
+            else:
+                merged.append(dict(stripe))
+        stripes = merged
         if len(stripes) < 3 or any(
             a["bottom"] >= b["top"] for a, b in zip(stripes, stripes[1:], strict=False)
         ):
@@ -46,6 +64,39 @@ def striped_tables(view: Any, words: list[dict[str, Any]]) -> list[dict[str, Any
         ]
         if not indices:
             continue
+        # Numbered model headers identify regression-table columns, not equation numbers.
+        headers = sorted(
+            [
+                i
+                for i in indices
+                if re.fullmatch(r"\(\d{1,2}\)", words[i]["text"])
+                and words[i]["box"][1] < bbox[1] + 0.025
+            ],
+            key=lambda i: words[i]["box"][0],
+        )
+        model_table = len(headers) >= 3 and [words[i]["text"] for i in headers] == [
+            f"({n})" for n in range(1, len(headers) + 1)
+        ]
+        splits: list[float] = []
+        if model_table:
+            for header in headers:
+                edge = words[header]["box"][0]
+                candidates = [edge - n / 2000 for n in range(2, 61)]
+                gap = next(
+                    (
+                        v
+                        for v in candidates
+                        if bbox[0] < v < bbox[2]
+                        and not any(words[i]["box"][0] < v < words[i]["box"][2] for i in indices)
+                    ),
+                    None,
+                )
+                if gap is None:
+                    splits = []
+                    break
+                splits.append(gap)
+            if len(splits) != len(headers) or splits != sorted(set(splits)):
+                continue
         # A measured empty gutter must separate columns; never split through words.
         candidates = [bbox[0] + (bbox[2] - bbox[0]) * n / 200 for n in range(55, 131)]
         gaps = [
@@ -56,16 +107,19 @@ def striped_tables(view: Any, words: list[dict[str, Any]]) -> list[dict[str, Any
         if not gaps:
             continue
         split = min(gaps, key=lambda v: abs(v - (bbox[0] + bbox[2]) / 2))
+        if not model_table:
+            splits = [split]
         boundaries = sorted({s["top"] for s in stripes} | {s["bottom"] for s in stripes} | {tail})
         rows: list[list[dict[str, Any]]] = []
         for start, finish in zip(boundaries, boundaries[1:], strict=False):
             cells = []
-            for leftcol in [True, False]:
+            edges = [bbox[0], *splits, bbox[2]]
+            for col_left, col_right in zip(edges, edges[1:], strict=False):
                 selected = [
                     i
                     for i in indices
                     if start <= y + (words[i]["box"][1] + words[i]["box"][3]) * height / 2 < finish
-                    and ((words[i]["box"][0] + words[i]["box"][2]) / 2 < split) == leftcol
+                    and col_left <= (words[i]["box"][0] + words[i]["box"][2]) / 2 < col_right
                 ]
                 # Cell text follows its measured lines, including wrapped labels.
                 lines: list[list[int]] = []
@@ -84,10 +138,20 @@ def striped_tables(view: Any, words: list[dict[str, Any]]) -> list[dict[str, Any
                 cells.append(
                     {"text": " ".join(words[i]["text"] for i in selected), "word_indices": selected}
                 )
-            if not all(c["word_indices"] for c in cells):
+            if (not model_table and not all(c["word_indices"] for c in cells)) or not any(
+                c["word_indices"] for c in cells
+            ):
                 rows = []
                 break
             rows.append(cells)
         if 3 <= len(rows) <= 100:
-            result.append({"box": bbox, "rows": rows, "detection": "alternating-shade-with-gutter"})
+            result.append(
+                {
+                    "box": bbox,
+                    "rows": rows,
+                    "detection": "numbered-model-columns"
+                    if model_table
+                    else "alternating-shade-with-gutter",
+                }
+            )
     return result

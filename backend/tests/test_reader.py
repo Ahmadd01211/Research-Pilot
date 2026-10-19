@@ -211,3 +211,63 @@ def test_undecodable_equation_is_not_prepared_as_prose_evidence():
     }
     chunks = make_chunks(uuid4(), "a" * 64, [layout])
     assert [c["source_id"] for c in chunks] == ["body"]
+
+
+def test_numbered_model_table_keeps_blank_columns_and_adjacent_bands():
+    from app.modules.documents.tables import striped_tables
+
+    class View:
+        bbox = (0, 0, 100, 100)
+        rects = [
+            {"x0": 5, "x1": 95, "top": a, "bottom": b}
+            for a, b in [(10, 20), (30, 36), (36, 42), (50, 60), (70, 71)]
+        ]
+
+    def w(text, x, y):
+        return {"text": text, "box": [x, y, x + 0.06, y + 0.02]}
+
+    words = [
+        w("Description", 0.07, 0.16),
+        w("(1)", 0.30, 0.11),
+        w("(2)", 0.50, 0.11),
+        w("(3)", 0.70, 0.11),
+    ]
+    for y in [0.25, 0.35, 0.45, 0.55, 0.65]:
+        words += [w("Factor", 0.07, y), w("0.12", 0.30, y), w("0.34", 0.70, y)]
+    tables = striped_tables(View(), words)
+    assert len(tables) == 1
+    table = tables[0]
+    assert table["detection"] == "numbered-model-columns"
+    assert len(table["rows"]) == 6
+    assert all(len(row) == 4 for row in table["rows"])
+    assert table["rows"][1][2] == {"text": "", "word_indices": []}
+    assert table["rows"][1][3]["text"] == "0.34"
+
+
+def test_model_table_chunks_include_headings_and_explicit_blanks():
+    from uuid import uuid4
+
+    from app.modules.documents.chunks import make_chunks
+
+    def cell(identity, text):
+        return {"id": identity, "text": text}
+
+    layout = {
+        "version": "table-test",
+        "passages": [],
+        "figures": [],
+        "tables": [
+            {
+                "detection": "numbered-model-columns",
+                "box": [0, 0, 1, 1],
+                "rows": [
+                    [cell("a", "Description"), cell("b", "(1) Revenue"), cell("c", "(2) Revenue")],
+                    [cell("d", "Education"), cell("e", "0.12 (0.03)"), cell("f", "")],
+                ],
+            }
+        ],
+    }
+    chunks = make_chunks(uuid4(), "a" * 64, [layout])
+    assert "Description: Education" in chunks[1]["text"]
+    assert "(1) Revenue: 0.12 (0.03)" in chunks[1]["text"]
+    assert "(2) Revenue: [blank in source]" in chunks[1]["text"]

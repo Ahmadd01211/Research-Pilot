@@ -5,7 +5,7 @@ import json
 from typing import Any
 from uuid import UUID
 
-CHUNKER_VERSION = "source-types-v2"
+CHUNKER_VERSION = "source-types-v3"
 
 
 def make_chunks(
@@ -23,6 +23,11 @@ def make_chunks(
         for table in layout.get("tables", []):
             for row_number, row in enumerate(table["rows"], 1):
                 text = " | ".join(cell["text"] for cell in row)
+                if table.get("detection") == "numbered-model-columns" and row_number > 1:
+                    text = " | ".join(
+                        f"{header['text']}: {cell['text'] or '[blank in source]'}"
+                        for header, cell in zip(table["rows"][0], row, strict=True)
+                    )
                 source_id = hashlib.sha256(
                     "|".join(cell["id"] for cell in row).encode()
                 ).hexdigest()
