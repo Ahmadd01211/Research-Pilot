@@ -171,3 +171,43 @@ def test_older_reader_can_be_explicitly_upgraded_once(client):
     assert client.post(path + "/prepare-reader", headers=csrf(client)).status_code == 409
     run_document(factory, storage, d)
     assert client.get(path + "/pages/1").json()["reader_current"] is True
+
+
+def test_numbered_equation_keeps_out_of_order_terms_together():
+    from app.modules.documents.reader import numbered_equations
+
+    def w(text, x, y):
+        return {"text": text, "box": [x, y, x + 0.02, y + 0.015], "margin": False}
+
+    words = [
+        w("firm:", 0.1, 0.08),
+        w("\uf0da", 0.48, 0.18),
+        w("g", 0.43, 0.12),
+        w("=", 0.45, 0.12),
+        w("1", 0.47, 0.11),
+        w("3", 0.47, 0.13),
+        w("ln", 0.50, 0.12),
+        w("t", 0.54, 0.13),
+        w("(1)", 0.90, 0.12),
+        w("After", 0.1, 0.165),
+    ]
+    assert numbered_equations(words, set()) == [list(range(1, 9))]
+    assert numbered_equations(words, {3}) == []
+
+
+def test_undecodable_equation_is_not_prepared_as_prose_evidence():
+    from uuid import uuid4
+
+    from app.modules.documents.chunks import make_chunks
+
+    layout = {
+        "version": "equation-test",
+        "passages": [
+            {"id": "equation", "text": "g = 1 3 \uf0da ln (1)"},
+            {"id": "body", "text": "The authors describe average revenue growth."},
+        ],
+        "tables": [],
+        "figures": [],
+    }
+    chunks = make_chunks(uuid4(), "a" * 64, [layout])
+    assert [c["source_id"] for c in chunks] == ["body"]

@@ -27,3 +27,7 @@ Deferred project conflict reconciliation and Trash/restore/retention/purge remai
 
 Selection uses separate figure and caption URL targets: View figure highlights only the image rectangle, View caption only its measured words, and passage links only their text. Without an image boundary, Open source page does not guess a rectangle; Preview source page displays the whole page.
 
+
+## Numbered equation grouping — 19 October 2026
+Reader v6 isolates conservative compact display-equation runs ending with a right-aligned equation number and containing mathematical font glyphs and equality. This fixes the supplied paper's physical page 17: all 22 components (word indices 24–45) form one passage, separate from the following paragraph. PDF drawing order and measured boxes are preserved; no LaTeX reconstruction or glyph correction is claimed. Unusual mathematical font boxes can be imperfect. Undecodable private-use glyph passages show a warning and are excluded from prose chunk preparation (chunker source-types-v2). This sacrifices recall rather than asserting damaged equations. Detection is conservative and does not cover all equations. Existing uploads need Update readable text and highlights. Original bytes and raw text are unchanged. Ruff/mypy, 52 backend tests, 43 frontend tests, lint/types/build pass; full supplied paper parsed locally with the regression verified. Deferred release/lifecycle work remains unchanged.
+

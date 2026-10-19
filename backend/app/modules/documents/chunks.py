@@ -5,7 +5,7 @@ import json
 from typing import Any
 from uuid import UUID
 
-CHUNKER_VERSION = "source-types-v1"
+CHUNKER_VERSION = "source-types-v2"
 
 
 def make_chunks(
@@ -16,6 +16,9 @@ def make_chunks(
         entries = []
         uncertain = any(f["box"] is None for f in layout.get("figures", []))
         for passage in [] if uncertain else layout["passages"]:
+            # Undecodable mathematical font glyphs must not become answer evidence.
+            if any(0xE000 <= ord(c) <= 0xF8FF for c in passage["text"]):
+                continue
             entries.append(("prose", passage["id"], passage["text"], {"passage_id": passage["id"]}))
         for table in layout.get("tables", []):
             for row_number, row in enumerate(table["rows"], 1):

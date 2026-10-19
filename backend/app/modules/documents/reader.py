@@ -12,7 +12,44 @@ from pdfplumber import __version__ as plumber_version
 from app.modules.documents.figures import figures_on_page, finalize_figures
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v5:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v6:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+
+
+def numbered_equations(words: list[dict[str, Any]], excluded: set[int]) -> list[list[int]]:
+    """Isolate compact equation runs ending with a right-aligned number.
+
+    Preserve PDF token order, including undecodable glyphs; never infer LaTeX.
+    This intentionally handles only clear numbered display equations.
+    """
+    groups = []
+    used: set[int] = set()
+    for end, word in enumerate(words):
+        if end in excluded or word["margin"] or not re.fullmatch(r"\(\d{1,3}\)", word["text"]):
+            continue
+        if word["box"][0] < 0.8:
+            continue
+        indices: list[int] = []
+        for i in range(end - 1, max(-1, end - 81), -1):
+            item = words[i]
+            if i in excluded or i in used or item["margin"]:
+                break
+            if len(item["text"]) > 8 or abs(item["box"][1] - word["box"][1]) > 0.09:
+                break
+            indices.insert(0, i)
+        # Do not absorb preceding short prose (e.g. "a firm:").
+        while indices and words[indices[0]]["text"].endswith((":", ".", ";")):
+            indices.pop(0)
+        equals = any("=" in words[i]["text"] for i in indices)
+        math = any(any(0xE000 <= ord(c) <= 0xF8FF for c in words[i]["text"]) for i in indices)
+        if len(indices) >= 4 and equals and math:
+            # Restrict the start to the mathematical run after the last prose punctuation.
+            boundaries = [j for j, i in enumerate(indices) if words[i]["text"].endswith(":")]
+            if boundaries:
+                indices = indices[boundaries[-1] + 1 :]
+            indices.append(end)
+            groups.append(indices)
+            used.update(indices)
+    return groups
 
 
 def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
@@ -110,10 +147,25 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                 for f in layout["figures"]
             ):
                 figure_words.add(i)
+        equations = numbered_equations(layout["words"], table_words | figure_words)
+        equation_words = {i for group in equations for i in group}
+        for group in equations:
+            layout["passages"].append(
+                {"text": " ".join(layout["words"][i]["text"] for i in group), "word_indices": group}
+            )
         current: list[int] = []
         length = 0
         for i, word in enumerate(layout["words"]):
-            if word["margin"] or i in table_words or i in figure_words:
+            if word["margin"] or i in table_words or i in figure_words or i in equation_words:
+                if i in equation_words and current:
+                    layout["passages"].append(
+                        {
+                            "text": " ".join(layout["words"][j]["text"] for j in current),
+                            "word_indices": current,
+                        }
+                    )
+                    current = []
+                    length = 0
                 continue
             if current and (
                 word["box"][1] < layout["words"][current[-1]]["box"][1] - 0.025
