@@ -146,6 +146,24 @@
     },
     {
       "status": "passed",
+      "case": "section-heading",
+      "words": 24,
+      "tables": 0,
+      "figures": 0,
+      "chunks": 2,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "decimal-prose",
+      "words": 25,
+      "tables": 0,
+      "figures": 0,
+      "chunks": 1,
+      "limitations": []
+    },
+    {
+      "status": "passed",
       "case": "summary-table",
       "words": 80,
       "tables": 1,

@@ -21,6 +21,8 @@ CASES = [
     "image-figure",
     "uncaptioned-image",
     "equation-baselines",
+    "section-heading",
+    "decimal-prose",
     "summary-table",
     "sectioned-numeric",
     "ambiguous-sectioned-numeric",
@@ -50,7 +52,18 @@ def corpus_pdf(case):
     def rect(x, y, w, h):
         ops.append(f"q .92 g {x} {y} {w} {h} re f Q")
 
-    if case == "summary-table":
+    if case in {"section-heading", "decimal-prose"}:
+        text("The preceding discussion concludes with a different finding.", 55, 695)
+        text(
+            "3.3 | Early use and adoption"
+            if case == "section-heading"
+            else "3.3 percent of firms reported this result",
+            55,
+            670,
+            14 if case == "section-heading" else 10,
+        )
+        text("The next paragraph explains this section with traceable source evidence.", 55, 648)
+    elif case == "summary-table":
         text("The preceding paragraph must remain separate from the table.", 50, 635)
         text("TABLE 1 Summary by sample.", 50, 615)
         rect(50, 550, 510, 50)

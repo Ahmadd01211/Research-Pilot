@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 from collections import Counter
+from statistics import median
 from typing import Any
 
 from pdfminer import __version__ as miner_version
@@ -13,7 +14,7 @@ from app.modules.documents.figures import figures_on_page, finalize_figures
 from app.modules.documents.labelled_tables import labelled_tables
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v12:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v13:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def flow_bounds(word: dict[str, Any], rotation: int) -> tuple[float, float]:
@@ -26,6 +27,43 @@ def flow_bounds(word: dict[str, Any], rotation: int) -> tuple[float, float]:
     if rotation == 270:
         return left, right
     return top, bottom
+
+
+def section_starts(
+    words: list[dict[str, Any]], excluded: set[int], height: float, rotation: int
+) -> set[int]:
+    """Recognize isolated numbered title lines larger than nearby body text.
+
+    Decimal prose and numeric cells are not headings. This intentionally does
+    not claim support for same-size bold-only or unnumbered titles.
+    """
+    starts: set[int] = set()
+    for i, word in enumerate(words):
+        if i in excluded or word["margin"] or not re.fullmatch(r"\d+(?:\.\d+){0,3}", word["text"]):
+            continue
+        top, bottom = flow_bounds(word, rotation)
+        if i and abs(flow_bounds(words[i - 1], rotation)[0] - top) * height < 4:
+            continue
+        line = []
+        for j in range(i, min(len(words), i + 30)):
+            if (
+                j in excluded
+                or words[j]["margin"]
+                or abs(flow_bounds(words[j], rotation)[0] - top) * height > 4
+            ):
+                break
+            line.append(j)
+        title = " ".join(words[j]["text"] for j in line)
+        if len(title) > 180 or not re.search(r"[A-Za-z]", title) or title.endswith((".", ";")):
+            continue
+        neighbours = [
+            flow_bounds(words[j], rotation)[1] - flow_bounds(words[j], rotation)[0]
+            for j in range(max(0, i - 40), min(len(words), i + 80))
+            if j not in excluded and j not in line and not words[j]["margin"]
+        ]
+        if len(neighbours) >= 8 and bottom - top >= median(neighbours) * 1.1:
+            starts.add(i)
+    return starts
 
 
 def numbered_equations(words: list[dict[str, Any]], excluded: set[int]) -> list[list[int]]:
@@ -176,6 +214,12 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
             layout["passages"].append(
                 {"text": " ".join(layout["words"][i]["text"] for i in group), "word_indices": group}
             )
+        heading_starts = section_starts(
+            layout["words"],
+            table_words | figure_words | equation_words,
+            layout["height"],
+            layout["rotation"],
+        )
         current: list[int] = []
         length = 0
         for i, word in enumerate(layout["words"]):
@@ -203,6 +247,7 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
             )
             if current and (
                 caption_start
+                or i in heading_starts
                 or word["text"] in {"Notes:", "Note:"}
                 or word_top < previous_top - 0.025
                 or word_top > previous_bottom + 0.045

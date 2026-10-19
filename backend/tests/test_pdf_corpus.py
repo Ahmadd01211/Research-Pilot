@@ -65,6 +65,15 @@ def check_case(case):
                 "(2) Revenue: [blank in source]"
                 in [c for c in chunks if c["kind"] == "table_row"][1]["text"]
             )
+    if case == "section-heading":
+        heading = next(p for p in layout["passages"] if "3.3" in p["text"])
+        assert heading["text"].startswith("3.3 | Early use and adoption")
+        assert "preceding discussion" not in heading["text"]
+        assert any(p["text"].startswith("The preceding discussion") for p in layout["passages"])
+        assert any(c["text"].startswith("3.3 | Early use and adoption") for c in chunks)
+    if case == "decimal-prose":
+        assert len(layout["passages"]) == 1
+        assert "3.3 percent" in layout["passages"][0]["text"]
     if case == "summary-table":
         assert [c["text"] for c in rows[1]] == [
             "Employment (unweighted)",
