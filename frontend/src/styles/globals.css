@@ -56,3 +56,9 @@
 .figure-card .reader-original { margin-top:16px; }
 .figure-reference { margin:16px 0; padding:12px 16px; border-left:3px solid #3457d5; font-size:.875rem; }
 .figure-reference a { display:inline-block; margin-top:8px; }
+
+.source-table-frame { min-width:0; margin-top:24px; }
+.source-table-navigation { display:flex; flex-direction:column; gap:12px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; }
+.source-table-navigation .row { flex-wrap:wrap; }
+.source-table-frame .source-table { margin-top:12px; scrollbar-gutter:stable; }
+.source-table:focus-visible { outline:2px solid #3457d5; outline-offset:3px; }
