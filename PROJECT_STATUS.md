@@ -94,3 +94,7 @@ Verification: 50 backend tests and 38 frontend tests; Ruff, strict mypy, fronten
 ## Figure caption highlight correction — 19 October 2026
 Figure selection now highlights the measured caption words alongside the image rectangle. Captions also highlight when image boundaries are uncertain. Source/version mismatch still disables all highlights. Existing v5 extraction needs no reprocessing. Frontend lint, strict types, all 41 tests and production build pass.
 
+
+## Separate figure and text targets — 19 October 2026
+Supersedes combined-caption highlighting above: View figure highlights only a known image box; View caption highlights only saved caption word boxes. Passage links remain text-only. Unknown image boundaries use Open source page and Preview source page, with no guessed image highlight. Full-page previews are intentional fallback, not isolated crops. No re-extraction required. All 43 frontend tests, lint/types and production builds pass; local web deployed.
+

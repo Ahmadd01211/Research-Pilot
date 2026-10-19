@@ -74,17 +74,32 @@ it('renders detected table rows as cells with source highlights',async()=>{
   expect(await screen.findByRole('img',{name:'PDF page 1, 2 highlighted words'})).toBeVisible();
 });
 
-it('highlights both the figure region and every caption word when selected',async()=>{
+it('highlights only the image region when viewing a figure',async()=>{
   open({figure:true});const ui=userEvent.setup();
   await ui.click(await screen.findByRole('button',{name:'View Figure 1 in PDF'}));
-  expect(await screen.findByRole('img',{name:'PDF page 1, 3 highlighted words'})).toBeVisible();
+  expect(await screen.findByRole('img',{name:'PDF page 1, 1 highlighted words'})).toBeVisible();
 });
-it('highlights caption words even when a figure has no reliable image boundary',async()=>{
+it('does not substitute caption highlights for an uncertain figure boundary',async()=>{
   open({figure:true,fallback:true,query:'?page=1&figure=figure-one&source=source-one&reader=reader-v2'});
-  expect(await screen.findByRole('img',{name:'PDF page 1, 2 highlighted words'})).toBeVisible();
+  expect(await screen.findByRole('button',{name:'Open source page'})).toBeVisible();
+  expect(await screen.findByRole('img',{name:'PDF page 1, 0 highlighted words'})).toBeVisible();
 });
 it('disables figure and caption highlights for a mismatched source',async()=>{
   open({figure:true,query:'?page=1&figure=figure-one&source=wrong-source&reader=reader-v2'});
   expect(await screen.findByRole('alert')).toHaveTextContent('highlight has been disabled');
   expect(screen.getByRole('img',{name:'PDF page 1, 0 highlighted words'})).toBeVisible();
+});
+
+it('switches exclusively between caption text and image highlights',async()=>{
+  open({figure:true});const ui=userEvent.setup();
+  await ui.click(await screen.findByRole('button',{name:'View Figure 1 in PDF'}));
+  expect(await screen.findByRole('img',{name:'PDF page 1, 1 highlighted words'})).toBeVisible();
+  await ui.click(screen.getByRole('button',{name:'View caption in PDF'}));
+  expect(await screen.findByRole('img',{name:'PDF page 1, 2 highlighted words'})).toBeVisible();
+  await ui.click(screen.getByRole('button',{name:'Show passage 1 in PDF'}));
+  expect(screen.getByRole('img',{name:'PDF page 1, 2 highlighted words'})).toBeVisible();
+});
+it('can highlight caption text independently on a full-page fallback',async()=>{
+  open({figure:true,fallback:true,query:'?page=1&caption=figure-one&source=source-one&reader=reader-v2'});
+  expect(await screen.findByRole('img',{name:'PDF page 1, 2 highlighted words'})).toBeVisible();
 });

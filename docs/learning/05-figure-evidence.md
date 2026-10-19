@@ -24,3 +24,6 @@ The reader now separates figure captions, original visual evidence, authors' dis
 Open an existing document and select Update readable text and highlights. After processing, visit PDF page 9 of the supplied paper. Its Figure 1 card offers a preview, source-page navigation, and linked authors' discussion. Check narrow-screen stacking yourself; browser screenshot automation is intentionally not used.
 
 Deferred project conflict reconciliation and Trash/restore/retention/purge remain required follow-ups. This phase adopts no purge policy and removes no originals.
+
+Selection uses separate figure and caption URL targets: View figure highlights only the image rectangle, View caption only its measured words, and passage links only their text. Without an image boundary, Open source page does not guess a rectangle; Preview source page displays the whole page.
+
