@@ -60,3 +60,5 @@ EvidencePage includes nullable layout: version, rotated CropBox width/height/rot
 POST `.../documents/{id}/prepare-reader`: owned live non-archived project, Origin/CSRF required, no body. Only an extracted document missing layouts can queue the bounded upgrade; pending/already-prepared/other outcomes return 409. No automatic backfill processing on migration. Metadata returns normal queued processing state; pages become available again on successful completion. Original attachments are unchanged. Current layout identity is word-passages-v3 plus pdfplumber/pdfminer versions.
 
 Frontend evidence links identify page, passage ID, original source checksum and reader version. These are source anchors for future RAG citations; the reader itself does not generate or verify scientific claims.
+
+Evidence layouts now include tables (box, detection method, rows of anchored cells) and reader_current. prepare-reader also accepts an extracted document with an older reader version, while rejecting already-current/pending work. Cell indices are validated like prose passages. No database migration is needed for the additive JSON layout fields.

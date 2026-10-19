@@ -4,7 +4,7 @@ import hooks from 'eslint-plugin-react-hooks';
 import refresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', 'src/lib/api/schema.d.ts'] },
+  { ignores: ['dist/**', 'public/pdf-assets/**', 'node_modules/**', 'src/lib/api/schema.d.ts'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   { files: ['**/*.{ts,tsx}'], languageOptions: { globals: { ...globals.browser, ...globals.node } }, plugins: { 'react-hooks': hooks, 'react-refresh': refresh }, rules: { ...hooks.configs.recommended.rules, 'react-refresh/only-export-components': ['warn', { allowConstantExport: true }] } },

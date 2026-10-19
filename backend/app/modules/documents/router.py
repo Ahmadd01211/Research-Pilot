@@ -11,6 +11,7 @@ from app.core.config import Settings
 from app.core.dependencies import current_user, database, settings_for
 from app.modules.documents import processing, service
 from app.modules.documents.models import DocumentPageText
+from app.modules.documents.reader import READER_VERSION
 from app.modules.documents.schemas import DocumentPage, DocumentRead, EvidencePage, UploadResult
 from app.modules.documents.storage import LocalStorage
 from app.modules.identity.models import User
@@ -152,6 +153,7 @@ def evidence_page(
         page_number=page_number,
         text=page.text,
         layout=page.layout,
+        reader_current=page.layout is not None and page.layout.get("version") == READER_VERSION,
         source_sha256=paper.sha256,
         extractor_version=paper.processing.extractor_version or "unknown",
     )
@@ -170,7 +172,15 @@ def prepare_reader(
         raise HTTPException(409, "Restore the project before preparing its reader")
     job = processing.locked_job(db, document_id)
     first = db.get(DocumentPageText, (document_id, 1))
-    if job is None or job.state != "extracted" or (first is not None and first.layout is not None):
+    if (
+        job is None
+        or job.state != "extracted"
+        or (
+            first is not None
+            and first.layout is not None
+            and first.layout.get("version") == READER_VERSION
+        )
+    ):
         raise HTTPException(409, "Reader preparation is not needed or is already running")
     job.state = "queued"
     job.attempts = 0

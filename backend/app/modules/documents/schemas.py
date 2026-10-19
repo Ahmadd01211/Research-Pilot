@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProcessingRead(BaseModel):
@@ -27,6 +27,12 @@ class ReadablePassage(BaseModel):
     word_indices: list[int]
 
 
+class SourceTable(BaseModel):
+    box: tuple[float, float, float, float]
+    rows: list[list[ReadablePassage]]
+    detection: str
+
+
 class ReaderLayout(BaseModel):
     version: str
     width: float
@@ -34,6 +40,7 @@ class ReaderLayout(BaseModel):
     rotation: int
     words: list[WordAnchor]
     passages: list[ReadablePassage]
+    tables: list[SourceTable] = Field(default_factory=list)
     excluded_margin_text: list[str]
 
 
@@ -42,6 +49,7 @@ class EvidencePage(BaseModel):
     page_number: int
     text: str
     layout: ReaderLayout | None = None
+    reader_current: bool = True
     source_sha256: str
     extractor_version: str
 

@@ -9,7 +9,9 @@ from typing import Any
 from pdfminer import __version__ as miner_version
 from pdfplumber import __version__ as plumber_version
 
-READER_VERSION = "word-passages-v3:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+from app.modules.documents.tables import striped_tables
+
+READER_VERSION = "word-passages-v4:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
@@ -58,6 +60,7 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                 "rotation": page.rotation or 0,
                 "words": words,
                 "passages": [],
+                "tables": striped_tables(view, words),
                 "excluded_margin_text": [],
             }
         )
@@ -88,11 +91,30 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                 layout["excluded_margin_text"].append(text)
                 for i in indices:
                     layout["words"][i]["margin"] = True
+        table_words = {
+            i
+            for table in layout["tables"]
+            for row in table["rows"]
+            for cell in row
+            for i in cell["word_indices"]
+        }
         current: list[int] = []
         length = 0
         for i, word in enumerate(layout["words"]):
-            if word["margin"]:
+            if word["margin"] or i in table_words:
                 continue
+            if current and (
+                word["box"][1] < layout["words"][current[-1]]["box"][1] - 0.025
+                or word["box"][1] > layout["words"][current[-1]]["box"][3] + 0.045
+            ):
+                layout["passages"].append(
+                    {
+                        "text": " ".join(layout["words"][j]["text"] for j in current),
+                        "word_indices": current,
+                    }
+                )
+                current = []
+                length = 0
             current.append(i)
             length += len(word["text"]) + 1
             if length >= 700 and (word["text"].endswith((".", "?", "!", ";")) or length >= 1100):
@@ -112,7 +134,9 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                 }
             )
     for number, layout in enumerate(layouts, 1):
-        for passage in layout["passages"]:
+        for passage in layout["passages"] + [
+            cell for table in layout["tables"] for row in table["rows"] for cell in row
+        ]:
             content = [
                 READER_VERSION,
                 number,

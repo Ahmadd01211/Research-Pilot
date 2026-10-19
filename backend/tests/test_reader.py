@@ -104,3 +104,70 @@ def test_repeated_margin_cleanup_never_changes_raw_or_numbers(client):
         assert page["passages"][0]["text"] == "18.5% AI-related"
         assert len(page["words"]) == 3
     assert layouts[0]["passages"][0]["id"] != layouts[1]["passages"][0]["id"]
+
+
+def test_striped_table_preserves_row_pairs_and_word_anchors():
+    from app.modules.documents.reader import prepare_layouts
+
+    class View:
+        bbox = (0, 0, 100, 100)
+        cropbox = bbox
+        rotation = 0
+        rects = [{"x0": 5, "x1": 95, "top": top, "bottom": top + 10} for top in [10, 30, 50]] + [
+            {"x0": 5, "x1": 95, "top": 70, "bottom": 71}
+        ]
+
+        def crop(self, *args, **kwargs):
+            return self
+
+        def close(self):
+            pass
+
+        def extract_words(self, **kwargs):
+            result = []
+            for r in range(6):
+                result += [
+                    {
+                        "text": f"Technology{r}",
+                        "x0": 10,
+                        "x1": 35,
+                        "top": 12 + r * 10,
+                        "bottom": 16 + r * 10,
+                    },
+                    {
+                        "text": f"Definition{r}",
+                        "x0": 55,
+                        "x1": 90,
+                        "top": 12 + r * 10,
+                        "bottom": 16 + r * 10,
+                    },
+                ]
+            return result
+
+    class PDF:
+        pages = [View()]
+
+    layout = prepare_layouts(PDF())[0]
+    assert not layout["passages"]  # Cells are not flattened/duplicated into body prose.
+    rows = layout["tables"][0]["rows"]
+    assert len(rows) == 6
+    for r, row in enumerate(rows):
+        assert [c["text"] for c in row] == [f"Technology{r}", f"Definition{r}"]
+        for cell in row:
+            assert len(cell["id"]) == 64
+            assert cell["word_indices"]
+
+
+def test_older_reader_can_be_explicitly_upgraded_once(client):
+    p, d, factory, storage = setup(client)
+    run_document(factory, storage, d)
+    path = f"/api/v1/projects/{p}/documents/{d}"
+    with factory() as db:
+        page = db.get(DocumentPageText, (d, 1))
+        page.layout = {**page.layout, "version": "older-reader"}
+        db.commit()
+    assert client.get(path + "/pages/1").json()["reader_current"] is False
+    assert client.post(path + "/prepare-reader", headers=csrf(client)).status_code == 200
+    assert client.post(path + "/prepare-reader", headers=csrf(client)).status_code == 409
+    run_document(factory, storage, d)
+    assert client.get(path + "/pages/1").json()["reader_current"] is True

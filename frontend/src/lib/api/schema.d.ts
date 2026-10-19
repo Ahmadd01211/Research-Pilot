@@ -397,6 +397,11 @@ export interface components {
             layout?: components["schemas"]["ReaderLayout"] | null;
             /** Page Number */
             page_number: number;
+            /**
+             * Reader Current
+             * @default true
+             */
+            reader_current: boolean;
             /** Source Sha256 */
             source_sha256: string;
             /** Text */
@@ -538,6 +543,8 @@ export interface components {
             passages: components["schemas"]["ReadablePassage"][];
             /** Rotation */
             rotation: number;
+            /** Tables */
+            tables?: components["schemas"]["SourceTable"][];
             /** Version */
             version: string;
             /** Width */
@@ -559,6 +566,20 @@ export interface components {
              * Format: password
              */
             password: string;
+        };
+        /** SourceTable */
+        SourceTable: {
+            /** Box */
+            box: [
+                number,
+                number,
+                number,
+                number
+            ];
+            /** Detection */
+            detection: string;
+            /** Rows */
+            rows: components["schemas"]["ReadablePassage"][][];
         };
         /** UploadResult */
         UploadResult: {

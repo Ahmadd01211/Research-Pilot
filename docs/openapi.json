@@ -186,6 +186,11 @@
             "title": "Page Number",
             "type": "integer"
           },
+          "reader_current": {
+            "default": true,
+            "title": "Reader Current",
+            "type": "boolean"
+          },
           "source_sha256": {
             "title": "Source Sha256",
             "type": "string"
@@ -632,6 +637,13 @@
             "title": "Rotation",
             "type": "integer"
           },
+          "tables": {
+            "items": {
+              "$ref": "#/components/schemas/SourceTable"
+            },
+            "title": "Tables",
+            "type": "array"
+          },
           "version": {
             "title": "Version",
             "type": "string"
@@ -689,6 +701,51 @@
           "display_name"
         ],
         "title": "RegisterInput",
+        "type": "object"
+      },
+      "SourceTable": {
+        "properties": {
+          "box": {
+            "maxItems": 4,
+            "minItems": 4,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Box",
+            "type": "array"
+          },
+          "detection": {
+            "title": "Detection",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "items": {
+                "$ref": "#/components/schemas/ReadablePassage"
+              },
+              "type": "array"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "box",
+          "rows",
+          "detection"
+        ],
+        "title": "SourceTable",
         "type": "object"
       },
       "UploadResult": {

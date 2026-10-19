@@ -47,3 +47,6 @@
 .reader-toolbar { gap:16px; flex-wrap:wrap; }
 @media(max-width:1100px) { .source-reader-grid { grid-template-columns: minmax(0,1fr); } .source-reader { padding:16px; } }
 .pdf-pending { visibility: hidden; }
+
+.source-table .library-table td, .source-table .library-table th { white-space:normal; min-width:160px; overflow-wrap:anywhere; vertical-align:top; }
+.source-table caption { text-align:left; font-weight:600; padding:12px 0; }
