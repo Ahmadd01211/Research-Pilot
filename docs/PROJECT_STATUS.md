@@ -90,3 +90,7 @@ Reader v5 adds source-caption cards, reliable embedded-image crops or full-page 
 Migration 0006 adds immutable, deterministic source chunks for prose, table rows and figure captions. Publication is atomic with extraction, repeats are idempotent, and prior chunk versions are retained. Ambiguous figure-page prose is excluded from retrieval preparation to avoid mixed chart labels; raw reading remains available. Embeddings, vector retrieval and chat generation remain pending, as does complete historical reader navigation. Deferred conflict and Trash/retention/purge work remains unchanged.
 
 Verification: 50 backend tests and 38 frontend tests; Ruff, strict mypy, frontend lint/types/build. See learning/05-figure-evidence.md and ADR 0008 for code flow and tradeoffs. No application volumes or user originals were removed.
+
+## Figure caption highlight correction — 19 October 2026
+Figure selection includes saved caption word boxes alongside the image rectangle, including caption-only fallback. Existing v5 extraction needs no reprocessing. Frontend lint/types, 41 tests and build pass.
+

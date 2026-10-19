@@ -8,12 +8,12 @@ vi.mock('../src/features/documents/pdf-canvas', () => ({ default: ({ page, boxes
 const p='11111111-1111-4111-8111-111111111111', d='22222222-2222-4222-8222-222222222222';
 const layout={ version:'reader-v2', width:612,height:792,rotation:0,words:[{text:'Measured',box:[.1,.1,.2,.12],margin:false},{text:'evidence.',box:[.21,.1,.4,.12],margin:false}],passages:[{id:'anchor-one',text:'Measured evidence.',word_indices:[0,1]}],excluded_margin_text:[] };
 afterEach(()=>vi.unstubAllGlobals());
-function open(options: {legacy?:boolean;query?:string;table?:boolean}={}) {
+function open(options: {legacy?:boolean;query?:string;table?:boolean;figure?:boolean;fallback?:boolean}={}) {
   const mock=vi.fn((url:string, init?:RequestInit)=>{
     if(url==='/api/v1/me')return Promise.resolve(Response.json({display_name:'Researcher',email:'r@example.com'}));
     if(url==='/api/v1/auth/csrf')return Promise.resolve(Response.json({csrf_token:'synthetic'}));
     if(init?.method==='POST')return Promise.resolve(Response.json({status:'queued'}));
-    if(url.includes('/pages/'))return Promise.resolve(Response.json({document_id:d,page_number:1,text:'Raw    source\nline.',source_sha256:'source-one',extractor_version:'extractor-v2',layout:options.legacy?null:options.table?{...layout,passages:[],tables:[{box:[.1,.1,.9,.5],detection:"measured",rows:[[{...layout.passages[0],id:"cell-a",text:"Machine learning"},{...layout.passages[0],id:"cell-b",text:"Algorithms that improve with data"}]]}]}:layout}));
+    if(url.includes('/pages/'))return Promise.resolve(Response.json({document_id:d,page_number:1,text:'Raw    source\nline.',source_sha256:'source-one',extractor_version:'extractor-v2',layout:options.legacy?null:options.figure?{...layout,figures:[{id:'figure-one',label:'Figure 1',caption:'Measured evidence.',caption_word_indices:[0,1],box:options.fallback?null:[.1,.2,.8,.5],detection:options.fallback?'source_page':'embedded_image',related_passages:[]}]}:options.table?{...layout,passages:[],tables:[{box:[.1,.1,.9,.5],detection:"measured",rows:[[{...layout.passages[0],id:"cell-a",text:"Machine learning"},{...layout.passages[0],id:"cell-b",text:"Algorithms that improve with data"}]]}]}:layout}));
     if(url.includes('/documents/'))return Promise.resolve(Response.json({id:d,filename:'Academic paper.pdf',status:'extracted',processing:{page_count:2}}));
     return Promise.resolve(Response.json({id:p,archived_at:null}));
   });
@@ -72,4 +72,19 @@ it('renders detected table rows as cells with source highlights',async()=>{
   expect(screen.getByRole('cell',{name:/Algorithms that improve with data/})).toBeVisible();
   await ui.click(screen.getByRole('button',{name:'Show row 1, column 2 in PDF'}));
   expect(await screen.findByRole('img',{name:'PDF page 1, 2 highlighted words'})).toBeVisible();
+});
+
+it('highlights both the figure region and every caption word when selected',async()=>{
+  open({figure:true});const ui=userEvent.setup();
+  await ui.click(await screen.findByRole('button',{name:'View Figure 1 in PDF'}));
+  expect(await screen.findByRole('img',{name:'PDF page 1, 3 highlighted words'})).toBeVisible();
+});
+it('highlights caption words even when a figure has no reliable image boundary',async()=>{
+  open({figure:true,fallback:true,query:'?page=1&figure=figure-one&source=source-one&reader=reader-v2'});
+  expect(await screen.findByRole('img',{name:'PDF page 1, 2 highlighted words'})).toBeVisible();
+});
+it('disables figure and caption highlights for a mismatched source',async()=>{
+  open({figure:true,query:'?page=1&figure=figure-one&source=wrong-source&reader=reader-v2'});
+  expect(await screen.findByRole('alert')).toHaveTextContent('highlight has been disabled');
+  expect(screen.getByRole('img',{name:'PDF page 1, 0 highlighted words'})).toBeVisible();
 });
