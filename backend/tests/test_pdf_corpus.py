@@ -65,6 +65,43 @@ def check_case(case):
                 "(2) Revenue: [blank in source]"
                 in [c for c in chunks if c["kind"] == "table_row"][1]["text"]
             )
+    if case == "front-matter":
+        roles = {p["role"] for p in layout["passages"]}
+        assert {
+            "publication_metadata",
+            "title",
+            "authors",
+            "affiliations",
+            "correspondence",
+            "funding",
+            "abstract",
+            "body",
+        } <= roles
+        abstract = next(p for p in layout["passages"] if p["role"] == "abstract")
+        assert "survey evidence" in abstract["text"] and "University" not in abstract["text"]
+        assert (
+            next(p for p in layout["passages"] if p["role"] == "title")["text"]
+            == "Evidence in academic systems"
+        )
+        assigned = [i for p in layout["passages"] for i in p["word_indices"]]
+        assert len(assigned) == len(set(assigned))
+        assert any(c["source_metadata"]["evidence_role"] == "abstract" for c in chunks)
+        assert all(
+            not any(
+                term in c["text"]
+                for term in [
+                    "10.0000",
+                    "Alice Example",
+                    "University",
+                    "author@example.com",
+                    "foundation",
+                ]
+            )
+            for c in chunks
+        )
+    if case == "front-matter-unanchored":
+        assert all(p["role"] == "body" for p in layout["passages"])
+        fallback.append("missing body anchor; front-matter classification not inferred")
     if case == "section-heading":
         heading = next(p for p in layout["passages"] if "3.3" in p["text"])
         assert heading["text"].startswith("3.3 | Early use and adoption")

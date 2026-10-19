@@ -22,6 +22,16 @@ class WordAnchor(BaseModel):
 
 
 class ReadablePassage(BaseModel):
+    role: Literal[
+        "body",
+        "abstract",
+        "title",
+        "authors",
+        "publication_metadata",
+        "affiliations",
+        "correspondence",
+        "funding",
+    ] = "body"
     id: str
     text: str
     word_indices: list[int]

@@ -595,6 +595,12 @@ export interface components {
         ReadablePassage: {
             /** Id */
             id: string;
+            /**
+             * Role
+             * @default body
+             * @enum {string}
+             */
+            role: "body" | "abstract" | "title" | "authors" | "publication_metadata" | "affiliations" | "correspondence" | "funding";
             /** Text */
             text: string;
             /** Word Indices */

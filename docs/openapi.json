@@ -736,6 +736,21 @@
             "title": "Id",
             "type": "string"
           },
+          "role": {
+            "default": "body",
+            "enum": [
+              "body",
+              "abstract",
+              "title",
+              "authors",
+              "publication_metadata",
+              "affiliations",
+              "correspondence",
+              "funding"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
           "text": {
             "title": "Text",
             "type": "string"

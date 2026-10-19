@@ -11,10 +11,11 @@ from pdfminer import __version__ as miner_version
 from pdfplumber import __version__ as plumber_version
 
 from app.modules.documents.figures import figures_on_page, finalize_figures
+from app.modules.documents.front_matter import front_matter
 from app.modules.documents.labelled_tables import labelled_tables
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v13:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v14:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def flow_bounds(word: dict[str, Any], rotation: int) -> tuple[float, float]:
@@ -187,7 +188,7 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
             entries.append((signature, indices, text))
         signatures.update({entry[0] for entry in entries})
         candidates.append(entries)
-    for layout, entries in zip(layouts, candidates, strict=True):
+    for page_index, (layout, entries) in enumerate(zip(layouts, candidates, strict=True)):
         for signature, indices, text in entries:
             if signatures[signature] >= max(3, len(layouts) * 0.4):
                 layout["excluded_margin_text"].append(text)
@@ -208,7 +209,10 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                 for f in layout["figures"]
             ):
                 figure_words.add(i)
-        equations = numbered_equations(layout["words"], table_words | figure_words)
+        front = front_matter(layout["words"], layout["rotation"]) if page_index == 0 else []
+        front_words = {i for block in front for i in block["word_indices"]}
+        layout["passages"].extend(front)
+        equations = numbered_equations(layout["words"], table_words | figure_words | front_words)
         equation_words = {i for group in equations for i in group}
         for group in equations:
             layout["passages"].append(
@@ -223,8 +227,16 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
         current: list[int] = []
         length = 0
         for i, word in enumerate(layout["words"]):
-            if word["margin"] or i in table_words or i in figure_words or i in equation_words:
-                if (i in equation_words or i in table_words or i in figure_words) and current:
+            if (
+                word["margin"]
+                or i in table_words
+                or i in figure_words
+                or i in equation_words
+                or i in front_words
+            ):
+                if (
+                    i in equation_words or i in table_words or i in figure_words or i in front_words
+                ) and current:
                     layout["passages"].append(
                         {
                             "text": " ".join(layout["words"][j]["text"] for j in current),

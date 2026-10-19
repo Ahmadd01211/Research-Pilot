@@ -6,7 +6,7 @@ import re
 from typing import Any
 from uuid import UUID
 
-CHUNKER_VERSION = "source-types-v5"
+CHUNKER_VERSION = "source-types-v6"
 
 
 def make_chunks(
@@ -17,10 +17,19 @@ def make_chunks(
         entries = []
         uncertain = any(f["box"] is None for f in layout.get("figures", []))
         for passage in [] if uncertain else layout["passages"]:
+            if passage.get("role", "body") not in {"body", "abstract"}:
+                continue
             # Undecodable mathematical font glyphs must not become answer evidence.
             if any(0xE000 <= ord(c) <= 0xF8FF for c in passage["text"]):
                 continue
-            entries.append(("prose", passage["id"], passage["text"], {"passage_id": passage["id"]}))
+            entries.append(
+                (
+                    "prose",
+                    passage["id"],
+                    passage["text"],
+                    {"passage_id": passage["id"], "evidence_role": passage.get("role", "body")},
+                )
+            )
         for table in layout.get("tables", []):
             if table.get("detection", "").endswith("ambiguous"):
                 continue

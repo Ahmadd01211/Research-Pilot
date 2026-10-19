@@ -21,6 +21,8 @@ CASES = [
     "image-figure",
     "uncaptioned-image",
     "equation-baselines",
+    "front-matter",
+    "front-matter-unanchored",
     "section-heading",
     "decimal-prose",
     "summary-table",
@@ -52,7 +54,24 @@ def corpus_pdf(case):
     def rect(x, y, w, h):
         ops.append(f"q .92 g {x} {y} {w} {h} re f Q")
 
-    if case in {"section-heading", "decimal-prose"}:
+    if case in {"front-matter", "front-matter-unanchored"}:
+        text("Received: 1 January 2026", 55, 760, 8)
+        text("DOI: 10.0000/synthetic", 55, 745, 8)
+        text("Evidence in academic systems", 55, 710, 20)
+        text("Alice Example | Ben Researcher", 55, 670, 12)
+        text("University of Synthetic Studies", 55, 620, 8)
+        text("Department of Evidence", 55, 608, 8)
+        text("Correspondence", 55, 570, 8)
+        text("Email: author@example.com", 55, 558, 8)
+        text("Funding information", 55, 520, 8)
+        text("Synthetic foundation", 55, 508, 8)
+        text("Abstract", 220, 615, 10)
+        text("We measured adoption using survey evidence.", 220, 595, 10)
+        text("The findings preserve their original source.", 220, 575, 10)
+        if case == "front-matter":
+            text("1 | INTRODUCTION", 55, 450, 12)
+            text("The main research body remains eligible for evidence retrieval.", 55, 428, 10)
+    elif case in {"section-heading", "decimal-prose"}:
         text("The preceding discussion concludes with a different finding.", 55, 695)
         text(
             "3.3 | Early use and adoption"

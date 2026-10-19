@@ -146,6 +146,26 @@
     },
     {
       "status": "passed",
+      "case": "front-matter",
+      "words": 54,
+      "tables": 0,
+      "figures": 0,
+      "chunks": 2,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "front-matter-unanchored",
+      "words": 42,
+      "tables": 0,
+      "figures": 0,
+      "chunks": 3,
+      "limitations": [
+        "missing body anchor; front-matter classification not inferred"
+      ]
+    },
+    {
+      "status": "passed",
       "case": "section-heading",
       "words": 24,
       "tables": 0,

@@ -151,3 +151,10 @@ Reader v13 starts a new passage at a numbered title line larger than nearby body
 
 Numbered-heading verification: all 74 isolated backend tests, Ruff and strict mypy pass. The actual 41-page paper parses locally with section 3.3 correctly beginning its passage. Twenty-layout report refreshed. Frontend source unchanged.
 
+
+## First-page source metadata roles — 19 October 2026
+Reader v14 conservatively separates first-page publication metadata, title, authors, affiliations, correspondence, funding and abstract using explicit Abstract/Introduction anchors, title size and measured sidebar geometry. Unsupported/rotated/unanchored layouts retain existing reading rather than inferred roles. Passage role is additive and defaults to body for old data. Supplied paper first page yields seven distinct role blocks with a coherent 210-word-token abstract, followed by introduction/body text. Source anchors and raw text remain unchanged. Chunker source-types-v6 excludes classified metadata from research-evidence chunks and records body/abstract evidence_role. UI labels metadata and explains that Reference Manager records are not automatically updated. This is not validated author/DOI parsing, a full first-page metadata service, or general copyright/footer removal. Existing documents need explicit reader upgrade. Corpus now has 22 layouts, including positive sidebar metadata and missing-body-anchor fallback.
+
+
+Front-matter verification: all 76 backend tests and 49 frontend tests pass, Ruff/strict mypy pass (41 source files), frontend lint/types/build and regenerated OpenAPI/types pass. Twenty-two-case quality report refreshed. Source-metadata blocks remain highlightable while excluded from generated evidence chunks; abstract remains eligible.
+
