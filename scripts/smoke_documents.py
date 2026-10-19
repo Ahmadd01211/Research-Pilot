@@ -38,6 +38,6 @@ if __name__ == "__main__":
     assert request(path + "/" + doc["id"] + "/download") == pdf
     assert request(path + "?filename=Renamed.pdf", "POST", pdf, True)["duplicate"] is True
     assert request(path)["total"] == 1
-    assert request(path)["items"][0]["status"] == "stored"
+    assert request(path)["items"][0]["status"] in {"queued", "processing", "extracted", "failed"}
     # Retain the synthetic fixture so the persistence probe can run after container recreation.
     print("Built-app storage smoke passed: private upload, >256 KiB proxy body, roundtrip, duplicate, list and honest status.")

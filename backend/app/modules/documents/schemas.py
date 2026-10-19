@@ -5,6 +5,24 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 
+class ProcessingRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    state: Literal["queued", "processing", "extracted", "failed", "cancelled"]
+    attempts: int
+    error_code: str | None
+    page_count: int | None
+    extractor_version: str | None
+    completed_at: datetime | None
+
+
+class EvidencePage(BaseModel):
+    document_id: UUID
+    page_number: int
+    text: str
+    source_sha256: str
+    extractor_version: str
+
+
 class DocumentRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
@@ -12,7 +30,8 @@ class DocumentRead(BaseModel):
     filename: str
     byte_size: int
     created_at: datetime
-    status: Literal["stored"] = "stored"
+    status: Literal["stored", "queued", "processing", "extracted", "failed", "cancelled"]
+    processing: ProcessingRead | None
 
 
 class UploadResult(BaseModel):

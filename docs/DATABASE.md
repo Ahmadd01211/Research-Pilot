@@ -68,3 +68,11 @@ The disposable test suite verifies model/migration parity, simultaneous creation
 ## Migration 0003 — stored originals
 
 `documents`: UUID id, project_id RESTRICT FK, filename(180), sha256(64), byte_size (1–20971520), created_at with timezone. Unique(project_id, sha256); index(project_id, created_at, id). Ownership derives from the parent project. No parsing/job/version/chunk rows exist yet. Original storage key is derived from the UUID and is not caller supplied. File and database publication are not one transaction; preserve originals on ambiguous commits and reconcile orphans carefully later.
+
+## Migration 0004 — durable extraction
+
+`document_jobs`: document_id PK/RESTRICT FK to immutable original; constrained state queued/processing/extracted/failed/cancelled; attempts 0–5; nullable UUID lease_token and lease_until; dispatch_after; nullable safe error_code, page_count, extractor_version and completed_at. Index(state, dispatch_after). The row is both job state and durable publication intent. Migration backfills all retained originals, cancelling removed-project jobs.
+
+`document_pages`: composite PK(document_id, page_number), RESTRICT FK, physical page_number 1–300, plain text. Completion saves all pages and status/activity atomically; no partial extracted page set is published. Original SHA-256 lives on documents; extractor identity on job. No version-replacement or embedding/chunk tables exist yet.
+
+`processing_heartbeat`: singleton id/ticked_at used by the dispatcher container health check. No user/content data. Worker job claims and finalization lock project then job; dispatcher uses SKIP LOCKED on jobs only. Lease token/deadline prevent stale publication; expired work is recovered under bounded attempts.

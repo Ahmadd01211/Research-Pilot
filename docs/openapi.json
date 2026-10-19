@@ -121,14 +121,30 @@
             "title": "Id",
             "type": "string"
           },
+          "processing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessingRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "project_id": {
             "format": "uuid",
             "title": "Project Id",
             "type": "string"
           },
           "status": {
-            "const": "stored",
-            "default": "stored",
+            "enum": [
+              "stored",
+              "queued",
+              "processing",
+              "extracted",
+              "failed",
+              "cancelled"
+            ],
             "title": "Status",
             "type": "string"
           }
@@ -138,9 +154,45 @@
           "project_id",
           "filename",
           "byte_size",
-          "created_at"
+          "created_at",
+          "status",
+          "processing"
         ],
         "title": "DocumentRead",
+        "type": "object"
+      },
+      "EvidencePage": {
+        "properties": {
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "extractor_version": {
+            "title": "Extractor Version",
+            "type": "string"
+          },
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "source_sha256": {
+            "title": "Source Sha256",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "page_number",
+          "text",
+          "source_sha256",
+          "extractor_version"
+        ],
+        "title": "EvidencePage",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -178,6 +230,80 @@
           "password"
         ],
         "title": "LoginInput",
+        "type": "object"
+      },
+      "ProcessingRead": {
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "extractor_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extractor Version"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "processing",
+              "extracted",
+              "failed",
+              "cancelled"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "attempts",
+          "error_code",
+          "page_count",
+          "extractor_version",
+          "completed_at"
+        ],
+        "title": "ProcessingRead",
         "type": "object"
       },
       "ProfileInput": {
@@ -1407,6 +1533,121 @@
           }
         },
         "summary": "Download",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/documents/{document_id}/pages/{page_number}": {
+      "get": {
+        "operationId": "evidence_page_api_v1_projects__project_id__documents__document_id__pages__page_number__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "page_number",
+            "required": true,
+            "schema": {
+              "title": "Page Number",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidencePage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Evidence Page",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/documents/{document_id}/retry": {
+      "post": {
+        "operationId": "retry_extraction_api_v1_projects__project_id__documents__document_id__retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry Extraction",
         "tags": [
           "documents"
         ]

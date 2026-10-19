@@ -27,7 +27,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        engine = create_engine(config.database_url.get_secret_value(), pool_pre_ping=True)
+        engine = create_engine(
+            config.database_url.get_secret_value(), pool_pre_ping=True, hide_parameters=True
+        )
         app.state.session_factory = sessionmaker(engine, expire_on_commit=False)
         app.state.redis = Redis.from_url(
             config.redis_url.get_secret_value(), socket_timeout=2, socket_connect_timeout=2
@@ -98,12 +100,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def ready() -> dict[str, str]:
         def probe() -> None:
             with app.state.engine.connect() as connection:
-                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0003"
+                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0004"
                 connection.execute(text("SELECT id, token_hash, csrf_hash FROM sessions LIMIT 0"))
                 connection.execute(
                     text("SELECT id, owner_id, revision FROM research_projects LIMIT 0")
                 )
                 connection.execute(text("SELECT id, project_id, sha256 FROM documents LIMIT 0"))
+                connection.execute(
+                    text("SELECT document_id, state, lease_token FROM document_jobs LIMIT 0")
+                )
             app.state.redis.ping()
 
         try:

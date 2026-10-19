@@ -247,6 +247,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/documents/{document_id}/pages/{page_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Evidence Page */
+        get: operations["evidence_page_api_v1_projects__project_id__documents__document_id__pages__page_number__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/documents/{document_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Extraction */
+        post: operations["retry_extraction_api_v1_projects__project_id__documents__document_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/restore": {
         parameters: {
             query?: never;
@@ -322,6 +356,7 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            processing: components["schemas"]["ProcessingRead"] | null;
             /**
              * Project Id
              * Format: uuid
@@ -329,10 +364,25 @@ export interface components {
             project_id: string;
             /**
              * Status
-             * @default stored
-             * @constant
+             * @enum {string}
              */
-            status: "stored";
+            status: "stored" | "queued" | "processing" | "extracted" | "failed" | "cancelled";
+        };
+        /** EvidencePage */
+        EvidencePage: {
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Extractor Version */
+            extractor_version: string;
+            /** Page Number */
+            page_number: number;
+            /** Source Sha256 */
+            source_sha256: string;
+            /** Text */
+            text: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -351,6 +401,24 @@ export interface components {
              * Format: password
              */
             password: string;
+        };
+        /** ProcessingRead */
+        ProcessingRead: {
+            /** Attempts */
+            attempts: number;
+            /** Completed At */
+            completed_at: string | null;
+            /** Error Code */
+            error_code: string | null;
+            /** Extractor Version */
+            extractor_version: string | null;
+            /** Page Count */
+            page_count: number | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "queued" | "processing" | "extracted" | "failed" | "cancelled";
         };
         /** ProfileInput */
         ProfileInput: {
@@ -1045,6 +1113,71 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    evidence_page_api_v1_projects__project_id__documents__document_id__pages__page_number__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                document_id: string;
+                page_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidencePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_extraction_api_v1_projects__project_id__documents__document_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentRead"];
+                };
             };
             /** @description Validation Error */
             422: {

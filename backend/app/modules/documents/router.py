@@ -9,8 +9,9 @@ from starlette.concurrency import run_in_threadpool
 
 from app.core.config import Settings
 from app.core.dependencies import current_user, database, settings_for
-from app.modules.documents import service
-from app.modules.documents.schemas import DocumentPage, DocumentRead, UploadResult
+from app.modules.documents import processing, service
+from app.modules.documents.models import DocumentPageText
+from app.modules.documents.schemas import DocumentPage, DocumentRead, EvidencePage, UploadResult
 from app.modules.documents.storage import LocalStorage
 from app.modules.identity.models import User
 from app.modules.projects.service import owned
@@ -119,4 +120,37 @@ def download(
         media_type="application/pdf",
         filename=paper.filename,
         content_disposition_type="attachment",
+    )
+
+
+@router.post("/{document_id}/retry", response_model=DocumentRead)
+def retry_extraction(
+    project_id: UUID,
+    document_id: UUID,
+    user: User = Depends(current_user),
+    db: Session = Depends(database),
+) -> DocumentRead:
+    return DocumentRead.model_validate(processing.retry(db, user.id, project_id, document_id))
+
+
+@router.get("/{document_id}/pages/{page_number}", response_model=EvidencePage)
+def evidence_page(
+    project_id: UUID,
+    document_id: UUID,
+    page_number: int,
+    user: User = Depends(current_user),
+    db: Session = Depends(database),
+) -> EvidencePage:
+    paper = service.owned(db, user.id, project_id, document_id)
+    if paper.processing is None or paper.status != "extracted":
+        raise HTTPException(409, "Text extraction has not completed")
+    page = db.get(DocumentPageText, (document_id, page_number)) if 1 <= page_number <= 300 else None
+    if page is None:
+        raise HTTPException(404, "Page not found")
+    return EvidencePage(
+        document_id=document_id,
+        page_number=page_number,
+        text=page.text,
+        source_sha256=paper.sha256,
+        extractor_version=paper.processing.extractor_version or "unknown",
     )

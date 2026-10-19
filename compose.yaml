@@ -48,8 +48,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+  dispatcher:
+    <<: *backend
+    command: [python, -m, app.workers.dispatcher]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -m, app.workers.dispatcher_health]
+      interval: 15s
+      timeout: 5s
+      retries: 5
   worker:
     <<: *backend
+    volumes: [papers:/var/lib/researchpilot:ro]
     command: [celery, -A, app.workers.celery_app:celery_app, worker, -Q, 'documents,embeddings,analysis,exports', --concurrency=2, --loglevel=WARNING]
     depends_on:
       migrate: {condition: service_completed_successfully}

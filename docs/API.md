@@ -43,3 +43,12 @@ The web proxy request limit is 256 KiB to accommodate valid bounded project meta
 - GET `.../documents/{document_id}/download`: authenticated attachment; safe 503 if original unavailable. Removed projects return 404; archives allow read/download.
 
 No parsing, replacement, deletion, processing retry or evidence-preview endpoint is implemented in this storage slice. Never interpret signature screening as structural PDF validation.
+
+## Processing extension (migration 0004; supersedes Stored-only status above)
+
+DocumentRead now includes status plus processing state, total attempts, safe error_code, page_count, extractor_version and completed_at. No lease token, broker details or filesystem key is exposed. New uploads queue processing in the same metadata transaction; duplicate uploads return the existing state without new work. Existing retained files are backfilled into queued jobs.
+
+- POST `/api/v1/projects/{project_id}/documents/{document_id}/retry`: session/Origin/CSRF required; owned non-archived project. Only failed temporary storage/worker outcomes with fewer than five total attempts can queue another attempt. Other states/outcomes return 409; foreign/removed resources return 404. No body required.
+- GET `.../documents/{document_id}/pages/{page_number}`: owned extracted document only; returns physical page_number, plain text, source_sha256 and extractor_version. Not yet extracted → 409; missing/out-of-range page → 404. Empty pages remain explicit. Download remains an authenticated attachment.
+
+States: queued → processing → extracted / failed / queued (temporary retry); removed projects cancel at claim/publication. Text extracted does not mean indexed, scientifically correct, OCR-complete or RAG-ready. Valid input supports 1–300 physical pages and bounded text; malformed/encrypted/insufficient text/resource/time/integrity errors are explained by the library. Automatic recovery stops at three attempts; user retries stop at five total.

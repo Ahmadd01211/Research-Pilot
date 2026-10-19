@@ -29,7 +29,7 @@ def test_private_storage_roundtrip_duplicates_and_activity(client: TestClient):
     result = upload(client, p)
     assert result.status_code == 200, result.text
     data = result.json()
-    assert data["duplicate"] is False and data["document"]["status"] == "stored"
+    assert data["duplicate"] is False and data["document"]["status"] == "queued"
     d = data["document"]["id"]
     path = f"/api/v1/projects/{p}/documents"
     assert client.get(path).json()["total"] == 1

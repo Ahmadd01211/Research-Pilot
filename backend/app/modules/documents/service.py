@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.modules.documents.models import Document
+from app.modules.documents.models import Document, DocumentJob
 from app.modules.documents.schemas import DocumentPage, DocumentRead, UploadResult
 from app.modules.documents.storage import LocalStorage
 from app.modules.projects import service as projects
@@ -76,6 +76,7 @@ def store(
             sha256=sha256,
             byte_size=size,
             created_at=datetime.now(UTC),
+            processing=DocumentJob(state="queued", attempts=0, dispatch_after=datetime.now(UTC)),
         )
         storage.publish(staged, document.id)
         db.add(document)

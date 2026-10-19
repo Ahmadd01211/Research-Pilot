@@ -109,6 +109,8 @@ pydantic-settings==2.16.0
     # via -r requirements.in
 pygments==2.21.0
     # via pytest
+pypdf==6.21.1
+    # via -r requirements.in
 pytest==9.1.1
     # via -r requirements.in
 python-dateutil==2.9.0.post0
