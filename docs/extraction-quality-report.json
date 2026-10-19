@@ -3,6 +3,18 @@
   "cases": [
     {
       "status": "passed",
+      "case": "numbered-section-numeric",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
+      "words": 67,
+      "tables": 1,
+      "figures": 0,
+      "chunks": 9,
+      "limitations": []
+    },
+    {
+      "status": "passed",
       "case": "prose",
       "assessment": "checked",
       "quality_findings": [],

@@ -39,3 +39,15 @@ Run the normal disposable backend suite and frontend checks before changing thes
 
 Verified locally: 97 backend tests and 55 frontend tests passed; Ruff, mypy, frontend lint/type checks and production build passed. Deployed upload/worker/link/quality and PDF-reader smoke checks passed. Existing documents require an explicit reader update; new uploads are assessed automatically.
 
+
+
+## Shared table extraction and chunk contract
+
+Reader v16 supports captioned shaded-header numeric tables with numbered multiword column headings and section rows, even without alternating body-row shading or a closing rule. Header starts define measured column boundaries; inconsistent numeric rows and word-crossing boundaries remain ambiguous and are withheld. Raw source bytes and text are unchanged.
+
+Chunker source-types-v8 shares labelled row and section handling across numbered model, model subcolumn, labelled, and numbered section adapters. Adding a detector must also pass the shared chunk-contract tests so a new layout cannot silently emit unlabelled numeric rows. Body/abstract passages, table rows and figure captions stay separate; source anchors, safe links, deterministic versioned identities and automatic quality gates remain in place. This is a conservative local parser, not universal document understanding or OCR.
+
+The supplied paper physical page 14 now yields 38 table rows and five columns. The advanced-degree evidence is: Full sample 22.4; Use AI 31.5; Do not use AI 21.9; Difference 9.6, with its owner-characteristics section retained. Previously fixed pages 7, 8, 18, 20, 33 and 34 retain expected table dimensions. The 23-layout synthetic corpus and four shared adapter-contract cases run automatically in the backend suite. Existing documents require reader update once; new uploads use the current pipeline automatically.
+
+Verification: 102 backend tests, 56 frontend tests and 23 real-PDF synthetic layouts pass. Ruff, strict mypy, frontend lint/type checking and production build pass. Supplied-paper page-14 labelled row values and prior table dimensions verified locally; deployed reader and link/quality smoke checks pass. No embeddings or provider requests introduced.
+

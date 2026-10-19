@@ -6,6 +6,7 @@ from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject, NumberObject
 
 CASES = [
+    "numbered-section-numeric",
     "prose",
     "two-columns",
     "crop",
@@ -54,7 +55,23 @@ def corpus_pdf(case):
     def rect(x, y, w, h):
         ops.append(f"q .92 g {x} {y} {w} {h} re f Q")
 
-    if case in {"front-matter", "front-matter-unanchored"}:
+    if case == "numbered-section-numeric":
+        text("TABLE 5 Comparison by status.", 50, 720)
+        rect(50, 650, 510, 40)
+        for n, (label, x) in enumerate(
+            [("Full sample", 280), ("Use AI", 350), ("Do not use AI", 420), ("Difference", 510)], 1
+        ):
+            text(f"({n})", x, 675, 8)
+            text(label, x, 658, 8)
+        text("A. Owner characteristics", 55, 630)
+        for n, y in enumerate([610, 590, 570, 530, 510, 490], 1):
+            if n == 4:
+                text("B. Startup financing", 55, 550)
+            text(f"Characteristic {n}", 55, y)
+            for col, x in enumerate([280, 350, 420, 510], 1):
+                text(f"{n}.{col}", x, y, 8)
+        text("Notes: Source notes remain outside the table.", 50, 465)
+    elif case in {"front-matter", "front-matter-unanchored"}:
         text("Received: 1 January 2026", 55, 760, 8)
         text("DOI: 10.0000/synthetic", 55, 745, 8)
         text("Evidence in academic systems", 55, 710, 20)

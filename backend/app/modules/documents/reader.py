@@ -17,7 +17,7 @@ from app.modules.documents.links import finalize_links, page_links
 from app.modules.documents.quality import assess_page
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v15:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v16:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def flow_bounds(word: dict[str, Any], rotation: int) -> tuple[float, float]:

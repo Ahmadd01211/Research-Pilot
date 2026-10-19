@@ -60,9 +60,26 @@ def labelled_tables(
         if not header_lines:
             continue
         header_line = header_lines[-1]
-        leaves = [i for i in header_line if words[i]["box"][0] >= left + (end - left) * 0.4]
-        if not 3 <= len(leaves) <= 6 or not all(
-            re.fullmatch(r"[A-Za-z][A-Za-z-]*", words[i]["text"]) for i in leaves
+        numbered = sorted(
+            [
+                i
+                for line in header_lines
+                for i in line
+                if re.fullmatch(r"\(\d{1,2}\)", words[i]["text"])
+            ],
+            key=lambda i: words[i]["box"][0],
+        )
+        model = 2 <= len(numbered) <= 6 and [words[i]["text"] for i in numbered] == [
+            f"({n})" for n in range(1, len(numbered) + 1)
+        ]
+        leaves = (
+            numbered
+            if model
+            else [i for i in header_line if words[i]["box"][0] >= left + (end - left) * 0.4]
+        )
+        if not model and (
+            not 3 <= len(leaves) <= 6
+            or not all(re.fullmatch(r"[A-Za-z][A-Za-z-]*", words[i]["text"]) for i in leaves)
         ):
             continue
         if any(
@@ -70,25 +87,47 @@ def labelled_tables(
             for a, b in zip(leaves, leaves[1:], strict=False)
         ):
             continue
-        # Parent metric text is above the leaves; numeric summary lines stay separate.
         parents = []
-        for line in header_lines[:-1]:
-            selected = [i for i in line if words[i]["box"][0] >= words[leaves[0]]["box"][0] - 0.005]
-            if (
-                selected
-                and any(re.search(r"[A-Za-z]", words[i]["text"]) for i in selected)
-                and not any(NUMBER.fullmatch(words[i]["text"]) for i in selected)
+        if not model:
+            for line in header_lines[:-1]:
+                selected = [
+                    i for i in line if words[i]["box"][0] >= words[leaves[0]]["box"][0] - 0.005
+                ]
+                if (
+                    selected
+                    and any(re.search(r"[A-Za-z]", words[i]["text"]) for i in selected)
+                    and not any(NUMBER.fullmatch(words[i]["text"]) for i in selected)
+                ):
+                    parents = selected
+        # Numbered multiword headings can be left aligned. Derive gutters from
+        # their measured starts, not the midpoint of the short model numbers.
+        if model:
+            splits = [words[i]["box"][0] - 0.012 for i in leaves]
+            header_groups = [
+                [
+                    i
+                    for line in header_lines
+                    for i in line
+                    if sum(words[i]["box"][0] >= split for split in splits) == col
+                ]
+                for col in range(1, len(leaves) + 1)
+            ]
+            if any(
+                not any(re.search(r"[A-Za-z]", words[i]["text"]) for i in group)
+                for group in header_groups
             ):
-                parents = selected
-        splits = [words[leaves[0]]["box"][0] - 0.015] + [
-            (words[a]["box"][2] + words[b]["box"][0]) / 2
-            for a, b in zip(leaves, leaves[1:], strict=False)
-        ]
+                continue
+        else:
+            splits = [words[leaves[0]]["box"][0] - 0.015] + [
+                (words[a]["box"][2] + words[b]["box"][0]) / 2
+                for a, b in zip(leaves, leaves[1:], strict=False)
+            ]
+            header_groups = [parents + [leaf] for leaf in leaves]
 
         def cell(ids: list[int]) -> dict[str, Any]:
             return {"text": " ".join(words[i]["text"] for i in ids), "word_indices": ids}
 
-        rows = [[cell([])] + [cell(parents + [leaf]) for leaf in leaves]]
+        rows = [[cell([])] + [cell(group) for group in header_groups]]
         count = 0
         ambiguous = False
         pending: list[int] = []
@@ -140,6 +179,8 @@ def labelled_tables(
                 "rows": rows,
                 "detection": "aligned-labelled-ambiguous"
                 if ambiguous
+                else "aligned-numbered-section-columns"
+                if model
                 else "aligned-labelled-columns",
             }
         )

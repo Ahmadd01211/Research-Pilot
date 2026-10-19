@@ -8,7 +8,7 @@ from uuid import UUID
 
 from app.modules.documents.quality import assess_page
 
-CHUNKER_VERSION = "source-types-v7"
+CHUNKER_VERSION = "source-types-v8"
 
 
 def make_chunks(
@@ -44,11 +44,18 @@ def make_chunks(
                 continue
             if table.get("detection", "").endswith("ambiguous"):
                 continue
+            # Layout adapters share one chunk contract. A new adapter must not
+            # silently fall back to unlabelled numeric rows.
+            detection = table.get("detection", "")
+            labelled = detection.startswith("numbered-model-") or detection in {
+                "aligned-labelled-columns",
+                "aligned-numbered-section-columns",
+            }
             section = ""
             subsection = ""
             for row_number, row in enumerate(table["rows"], 1):
                 if (
-                    table.get("detection") == "aligned-labelled-columns"
+                    labelled
                     and row_number > 1
                     and row[0]["text"]
                     and not any(c["text"] for c in row[1:])
@@ -60,10 +67,7 @@ def make_chunks(
                         subsection = row[0]["text"]
                     continue
                 text = " | ".join(cell["text"] for cell in row)
-                if (
-                    table.get("detection", "").startswith("numbered-model-")
-                    or table.get("detection") == "aligned-labelled-columns"
-                ) and row_number > 1:
+                if labelled and row_number > 1:
                     text = " | ".join(
                         f"{header['text']}: {cell['text'] or '[blank in source]'}"
                         if header["text"]

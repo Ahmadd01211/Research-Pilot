@@ -65,6 +65,17 @@ def check_case(case):
                 "(2) Revenue: [blank in source]"
                 in [c for c in chunks if c["kind"] == "table_row"][1]["text"]
             )
+    if case == "numbered-section-numeric":
+        assert len(layout["tables"]) == 1
+        rows = layout["tables"][0]["rows"]
+        assert len(rows) == 9 and all(len(row) == 5 for row in rows)
+        assert rows[0][3]["text"] == "(3) Do not use AI"
+        assert rows[2][0]["text"] == "Characteristic 1"
+        assert rows[2][4]["text"] == "1.4"
+        assert rows[5][0]["text"] == "B. Startup financing"
+        assert not body & table
+        assert any("Notes:" in p["text"] for p in layout["passages"])
+        assert any("Do not use AI: 1.3" in c["text"] for c in chunks)
     if case == "front-matter":
         roles = {p["role"] for p in layout["passages"]}
         assert {
