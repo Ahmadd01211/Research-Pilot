@@ -48,13 +48,13 @@ def striped_tables(view: Any, words: list[dict[str, Any]]) -> list[dict[str, Any
         lower = [
             r["top"]
             for r in rules
-            if stripes[-1]["bottom"]
+            if stripes[-1]["bottom"] - 0.5
             <= r["top"]
             <= stripes[-1]["bottom"] + 2 * (stripes[-1]["bottom"] - stripes[-1]["top"])
         ]
         if not lower:
             continue
-        top, tail = stripes[0]["top"], min(lower)
+        top, tail = stripes[0]["top"], max(stripes[-1]["bottom"], min(lower))
         bbox = [(left - x) / width, (top - y) / height, (end - x) / width, (tail - y) / height]
         indices = [
             i
@@ -74,9 +74,21 @@ def striped_tables(view: Any, words: list[dict[str, Any]]) -> list[dict[str, Any
             ],
             key=lambda i: words[i]["box"][0],
         )
-        model_table = len(headers) >= 3 and [words[i]["text"] for i in headers] == [
-            f"({n})" for n in range(1, len(headers) + 1)
+        caption_words = [
+            w["text"]
+            for w in words
+            if bbox[1] - 0.06 <= w["box"][1] < bbox[1]
+            and bbox[0] - 0.001 <= w["box"][0] <= bbox[2] + 0.001
         ]
+        has_table_caption = bool(
+            re.search(r"\bTABLE\s+[A-Za-z0-9]", " ".join(caption_words), re.IGNORECASE)
+        )
+        model_table = (
+            len(headers) >= 2
+            and (len(headers) >= 3 or has_table_caption)
+            and [words[i]["text"] for i in headers]
+            == [f"({n})" for n in range(1, len(headers) + 1)]
+        )
         splits: list[float] = []
         if model_table:
             for header in headers:

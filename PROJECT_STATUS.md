@@ -122,3 +122,7 @@ Verification: 66 backend tests, 45 frontend tests, Ruff/strict mypy, frontend li
 ## Wide source table navigation — 19 October 2026
 User confirmed page-18 columns were available; this was not missing extraction. Wide tables now show actual column count, explicit sideways-scroll instructions and working previous/next column controls. The scroll region is labelled and keyboard focusable; two-column tables keep the simpler layout. No reader/chunker version change or reprocessing is required.
 
+
+## Two-model regression table correction — 19 October 2026
+Reader v9 supports two sequential numbered model columns when a nearby table caption is present, while retaining measured empty-gutter and shaded-boundary validation. Half-point closing-rule tolerance handles contiguous shading/rule coordinate rounding without creating empty rows. Supplied paper physical page 20 / printed 394 now yields one three-column, thirteen-row table: both model headings remain in its header row; title, notes and body prose are separate. Page-8 ten-row and page-18 twenty-row tables remain intact. The original synthetic corpus now contains thirteen layouts, including a captioned two-model table, and checks caption/table separation. Existing uploads require the explicit reader upgrade; original/raw text unchanged.
+

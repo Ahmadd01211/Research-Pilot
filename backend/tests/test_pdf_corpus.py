@@ -41,11 +41,25 @@ def check_case(case):
         assert len(layout["tables"]) == 1
         rows = layout["tables"][0]["rows"]
         assert len(rows) == 6
-        assert all(len(row) == (4 if case == "model-table" else 2) for row in rows)
+        assert all(
+            len(row) == (4 if case == "model-table" else 3 if case == "two-model-table" else 2)
+            for row in rows
+        )
         assert not body & table
         if case == "model-table":
             assert rows[1][2]["text"] == ""
-            assert "(2) Revenue: [blank in source]" in chunks[1]["text"]
+            assert (
+                "(2) Revenue: [blank in source]"
+                in [c for c in chunks if c["kind"] == "table_row"][1]["text"]
+            )
+    if case == "two-model-table":
+        assert rows[0][1]["text"] == "(1) Revenue"
+        assert rows[0][2]["text"] == "(2) Revenue"
+        assert rows[1][2]["text"] == "0.14 (0.05)"
+        caption_words = {
+            i for p in layout["passages"] for i in p["word_indices"] if words[i]["text"] == "TABLE"
+        }
+        assert caption_words and not caption_words & table
     if case in {"vector-figure", "image-figure", "uncaptioned-image"}:
         assert len(layout["figures"]) == 1
         figure = layout["figures"][0]

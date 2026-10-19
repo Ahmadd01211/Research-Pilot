@@ -14,6 +14,7 @@ CASES = [
     "rotation-270",
     "definition-table",
     "model-table",
+    "two-model-table",
     "vector-figure",
     "image-figure",
     "uncaptioned-image",
@@ -44,14 +45,15 @@ def corpus_pdf(case):
     def rect(x, y, w, h):
         ops.append(f"q .92 g {x} {y} {w} {h} re f Q")
 
-    if case in {"definition-table", "model-table"}:
+    if case in {"definition-table", "model-table", "two-model-table"}:
         rect(50, 650, 510, 50)
         for y in [570, 490]:
             rect(50, y, 510, 40)
         rect(50, 450, 510, 1)
-        if case == "model-table":
+        if case in {"model-table", "two-model-table"}:
+            text("TABLE 1 Synthetic model comparison.", 50, 720)
             text("Description", 55, 665)
-            for n, x in enumerate([220, 330, 440], 1):
+            for n, x in enumerate([220, 440] if case == "two-model-table" else [220, 330, 440], 1):
                 text(f"({n})", x, 685)
                 text("Revenue", x, 665)
             for row, y in enumerate([625, 585, 545, 505, 465], 1):

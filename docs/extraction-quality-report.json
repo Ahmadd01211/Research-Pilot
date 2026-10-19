@@ -69,10 +69,19 @@
     {
       "status": "passed",
       "case": "model-table",
-      "words": 37,
+      "words": 42,
       "tables": 1,
       "figures": 0,
-      "chunks": 6,
+      "chunks": 7,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "two-model-table",
+      "words": 40,
+      "tables": 1,
+      "figures": 0,
+      "chunks": 7,
       "limitations": []
     },
     {
