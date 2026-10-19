@@ -264,6 +264,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/documents/{document_id}/prepare-reader": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Prepare Reader */
+        post: operations["prepare_reader_api_v1_projects__project_id__documents__document_id__prepare_reader_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/documents/{document_id}/retry": {
         parameters: {
             query?: never;
@@ -377,6 +394,7 @@ export interface components {
             document_id: string;
             /** Extractor Version */
             extractor_version: string;
+            layout?: components["schemas"]["ReaderLayout"] | null;
             /** Page Number */
             page_number: number;
             /** Source Sha256 */
@@ -501,6 +519,32 @@ export interface components {
             /** Expected Revision */
             expected_revision: number;
         };
+        /** ReadablePassage */
+        ReadablePassage: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+            /** Word Indices */
+            word_indices: number[];
+        };
+        /** ReaderLayout */
+        ReaderLayout: {
+            /** Excluded Margin Text */
+            excluded_margin_text: string[];
+            /** Height */
+            height: number;
+            /** Passages */
+            passages: components["schemas"]["ReadablePassage"][];
+            /** Rotation */
+            rotation: number;
+            /** Version */
+            version: string;
+            /** Width */
+            width: number;
+            /** Words */
+            words: components["schemas"]["WordAnchor"][];
+        };
         /** RegisterInput */
         RegisterInput: {
             /** Display Name */
@@ -546,6 +590,20 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** WordAnchor */
+        WordAnchor: {
+            /** Box */
+            box: [
+                number,
+                number,
+                number,
+                number
+            ];
+            /** Margin */
+            margin: boolean;
+            /** Text */
+            text: string;
         };
     };
     responses: never;
@@ -1145,6 +1203,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvidencePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    prepare_reader_api_v1_projects__project_id__documents__document_id__prepare_reader_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentRead"];
                 };
             };
             /** @description Validation Error */

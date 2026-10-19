@@ -5,6 +5,8 @@ import { MemoryRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from '../src/app/router';
 
+vi.mock('../src/features/documents/pdf-canvas', () => ({ default: () => <div>Original PDF canvas</div> }));
+
 const project = '11111111-1111-4111-8111-111111111111';
 const document = '22222222-2222-4222-8222-222222222222';
 const base = `/projects/${project}/documents/${document}`;

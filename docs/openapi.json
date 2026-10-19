@@ -172,6 +172,16 @@
             "title": "Extractor Version",
             "type": "string"
           },
+          "layout": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReaderLayout"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "page_number": {
             "title": "Page Number",
             "type": "integer"
@@ -572,6 +582,84 @@
         "title": "ProjectTransition",
         "type": "object"
       },
+      "ReadablePassage": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "word_indices": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Word Indices",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "word_indices"
+        ],
+        "title": "ReadablePassage",
+        "type": "object"
+      },
+      "ReaderLayout": {
+        "properties": {
+          "excluded_margin_text": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Excluded Margin Text",
+            "type": "array"
+          },
+          "height": {
+            "title": "Height",
+            "type": "number"
+          },
+          "passages": {
+            "items": {
+              "$ref": "#/components/schemas/ReadablePassage"
+            },
+            "title": "Passages",
+            "type": "array"
+          },
+          "rotation": {
+            "title": "Rotation",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "number"
+          },
+          "words": {
+            "items": {
+              "$ref": "#/components/schemas/WordAnchor"
+            },
+            "title": "Words",
+            "type": "array"
+          }
+        },
+        "required": [
+          "version",
+          "width",
+          "height",
+          "rotation",
+          "words",
+          "passages",
+          "excluded_margin_text"
+        ],
+        "title": "ReaderLayout",
+        "type": "object"
+      },
       "RegisterInput": {
         "additionalProperties": false,
         "properties": {
@@ -682,6 +770,45 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "WordAnchor": {
+        "properties": {
+          "box": {
+            "maxItems": 4,
+            "minItems": 4,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Box",
+            "type": "array"
+          },
+          "margin": {
+            "title": "Margin",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "box",
+          "margin"
+        ],
+        "title": "WordAnchor",
         "type": "object"
       }
     }
@@ -1595,6 +1722,59 @@
           }
         },
         "summary": "Evidence Page",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/documents/{document_id}/prepare-reader": {
+      "post": {
+        "operationId": "prepare_reader_api_v1_projects__project_id__documents__document_id__prepare_reader_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Prepare Reader",
         "tags": [
           "documents"
         ]

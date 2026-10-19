@@ -4,7 +4,7 @@
 2. Account UI accepted by user. Password recovery is explicitly deferred; implement real reset email/token expiry/revocation before public release, and settle the token-lifecycle requirement separately.
 3. Completed: owner-scoped project create/read/edit, archive/restore, confirmed soft removal, questions/objectives, cursor lists, real dashboard and transactional activity. User visual acceptance of this new slice is next.
 4. Completed: private immutable PDF storage, scoped duplicates/quotas, durable jobs/outbox, bounded PDF validation/page-linked extraction, retries/recovery and source-text review. Explicit replacement/version-history UI remains pending; preserve immutable source/extractor identity when implementing retrieval. Extracted sources are not yet embedded/indexed.
-5. Next — version-aware chunking, embeddings and Research Chat: one configured provider, source-scoped retrieval, citations, streaming, abstention and repeatable RAG evaluation.
+5. Source reader completed: actual PDF display, readable/raw text, measured passage highlights and version-checked links. Next — version-aware chunking, Google-hosted embeddings and Research Chat with an independently configured answer model: one configured provider, source-scoped retrieval, citations, streaming, abstention and repeatable RAG evaluation.
 6. Literature matrix and candidate gaps: editable extracted fields, retained provenance and bounded claims.
 7. Writing, references and exports: structured editor, revisions, citation management and actual DOCX/CSV/XLSX capability.
 8. Release hardening: production identity policy, metering/budgets, security tests, observability, restore drill and deployment.

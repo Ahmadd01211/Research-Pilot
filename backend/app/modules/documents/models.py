@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.base import Base
@@ -66,6 +67,7 @@ class DocumentPageText(Base):
     )
     page_number: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column(Text)
+    layout: Mapped[dict[str, object] | None] = mapped_column(JSONB)
 
 
 class ProcessingHeartbeat(Base):

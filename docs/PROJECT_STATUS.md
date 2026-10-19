@@ -1,6 +1,6 @@
 # ResearchPilot project status
 
-Updated: 19 October 2026. Branch: feat/pdf-processing. The tested Vite/identity foundation is checkpointed in local Git. No remote/PR or public deployment exists.
+Updated: 19 October 2026. Branch: feat/source-reader. The tested Vite/identity foundation is checkpointed in local Git. No remote/PR or public deployment exists.
 
 ## Working local application
 
@@ -63,3 +63,16 @@ Access/lifecycle: all evidence/retry endpoints scope to current user's live proj
 Verification: Ruff and strict mypy pass (35 source files); all 37 backend integration cases pass against isolated PostgreSQL/Redis with temporary storage. All 24 frontend tests, lint, types and local/container builds pass. Real built-app HTTP smoke passed through dispatcher, Redis, Celery, parser and database: a valid two-page PDF extracted with correct source page, original roundtripped, duplicates did not reprocess, malformed PDF failed honestly. Migration/model parity passed. One upstream Starlette/httpx test warning remains. No screenshot automation; user visual review is pending. Existing app volumes/data preserved; synthetic smoke accounts/projects/documents retained.
 
 Read learning/03-durable-pdf-processing.md and ADR 0005 for code flow, failure categories and tradeoffs. Next research phase: chunking/embedding identity, owned source-scoped retrieval and Research Chat with citations and abstention. No embedding provider is configured/called yet. Explicit replacement/version history, OCR, stronger parser sandboxing, artifact reconciliation/backups and prior public-release work remain pending.
+
+
+## Current source-reader milestone — 19 October 2026
+
+Original-format reading now uses lazy self-hosted PDF.js 6.4.299 with actual source layout, zoom and synchronized pages. Reader supports PDF+text, PDF-only or text-only views and responsive stacking. Raw pypdf transcript remains separate from readable measured-word passages. Select Show passage in PDF to highlight saved word boxes; links include physical page, deterministic passage anchor, original checksum and reader/parser version. Unknown/mismatched anchors and invalid pages never silently select another source. The browser checksum-verifies originals before rendering. Security policy was not relaxed; XFA/WASM are disabled, local inert image fallbacks/fonts/CMaps are served, and module workers have the proper JavaScript MIME type.
+
+Extraction now adds pdfplumber/pdfminer word coordinates in rotated CropBox space. Font-relative segmentation improves tight typesetting. Reader version word-passages-v3 plus parser identities captures the cleanup rule; repeated edge/side-margin text is excluded only after recurrence across at least three/40% of pages and remains inspectable. No spelling, citation/number repair or AI rewriting occurs. All raw text remains available. Passage reading order, complex layouts and mathematical text can remain imperfect.
+
+Migration 0005 adds nullable page layout JSONB. Existing extractions are preserved; an owned CSRF-protected Prepare readable text and highlights action queues a bounded upgrade only when needed. New uploads prepare automatically. Original PDFs are unchanged; no erasure/retention policy or conflict-resolution UI was introduced.
+
+Verification: Ruff and strict mypy pass (36 backend source files); all 41 disposable PostgreSQL/Redis integration tests pass, including raw preservation, boxes, crop/rotation, preparation ownership and cleanup. All 34 frontend tests, lint, strict types and local/container builds pass. Static PDF.js canvas checks rendered the supplied 41-page source's first pages with measured overlays; the full bounded parser processed all 41 pages locally. Built-app reader smoke passes: real background layout extraction, checksum/original roundtrip, source deep route, worker MIME, local font/CMap/decoder assets and strict CSP. All six services are healthy. One upstream Starlette/httpx test warning remains. Actual app visual review is pending; no browser screenshot automation was used.
+
+Google-hosted embeddings with an independently configurable stronger chat model are user-selected for the next RAG phase (ADR 0007). No provider API key, external embedding call, vector index or chat generation is implemented/configured in this reader milestone; no research content was sent to Google. Before changing source extraction after citations exist, retain cited derived versions explicitly. See learning/04-source-reader.md and ADR 0006 for implementation/tradeoffs. Existing user data, volumes, reference images and source file were preserved; smoke fixtures use synthetic accounts/papers.

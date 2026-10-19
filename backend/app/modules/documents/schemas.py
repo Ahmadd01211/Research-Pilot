@@ -15,10 +15,33 @@ class ProcessingRead(BaseModel):
     completed_at: datetime | None
 
 
+class WordAnchor(BaseModel):
+    text: str
+    box: tuple[float, float, float, float]
+    margin: bool
+
+
+class ReadablePassage(BaseModel):
+    id: str
+    text: str
+    word_indices: list[int]
+
+
+class ReaderLayout(BaseModel):
+    version: str
+    width: float
+    height: float
+    rotation: int
+    words: list[WordAnchor]
+    passages: list[ReadablePassage]
+    excluded_margin_text: list[str]
+
+
 class EvidencePage(BaseModel):
     document_id: UUID
     page_number: int
     text: str
+    layout: ReaderLayout | None = None
     source_sha256: str
     extractor_version: str
 

@@ -30,8 +30,14 @@ def main() -> None:
                 if len(text) > 100_000 or total > 2_000_000:
                     raise MemoryError
                 pages.append(text)
+            import pdfplumber
+
+            from app.modules.documents.reader import prepare_layouts
+
+            with pdfplumber.open(sys.argv[1]) as pdf:
+                layouts = prepare_layouts(pdf)
             result = (
-                {"pages": pages}
+                {"pages": pages, "layouts": layouts}
                 if sum(len(p.strip()) for p in pages) >= 40
                 else {"error": "insufficient_text"}
             )

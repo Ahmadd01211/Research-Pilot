@@ -76,3 +76,7 @@ The disposable test suite verifies model/migration parity, simultaneous creation
 `document_pages`: composite PK(document_id, page_number), RESTRICT FK, physical page_number 1–300, plain text. Completion saves all pages and status/activity atomically; no partial extracted page set is published. Original SHA-256 lives on documents; extractor identity on job. No version-replacement or embedding/chunk tables exist yet.
 
 `processing_heartbeat`: singleton id/ticked_at used by the dispatcher container health check. No user/content data. Worker job claims and finalization lock project then job; dispatcher uses SKIP LOCKED on jobs only. Lease token/deadline prevent stale publication; expired work is recovered under bounded attempts.
+
+## Migration 0005 — source layout
+
+Nullable document_pages.layout JSONB stores reader identity, rotated CropBox size, measured normalized words, margin flags, readable passages with deterministic IDs and word-index references, and excluded recurring margin text. Existing raw page text is retained. New parsing jobs publish both representations atomically. Existing layout-null extractions may request a bounded reader upgrade; migration itself does not requeue/rewrite them. General versioned reprocessing must retain cited derived versions once RAG citations exist.

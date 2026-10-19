@@ -13,3 +13,5 @@ coverage/
 *.tsbuildinfo
 
 dist/
+
+frontend/public/pdf-assets/

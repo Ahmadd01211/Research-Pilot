@@ -52,3 +52,11 @@ DocumentRead now includes status plus processing state, total attempts, safe err
 - GET `.../documents/{document_id}/pages/{page_number}`: owned extracted document only; returns physical page_number, plain text, source_sha256 and extractor_version. Not yet extracted → 409; missing/out-of-range page → 404. Empty pages remain explicit. Download remains an authenticated attachment.
 
 States: queued → processing → extracted / failed / queued (temporary retry); removed projects cancel at claim/publication. Text extracted does not mean indexed, scientifically correct, OCR-complete or RAG-ready. Valid input supports 1–300 physical pages and bounded text; malformed/encrypted/insufficient text/resource/time/integrity errors are explained by the library. Automatic recovery stops at three attempts; user retries stop at five total.
+
+## Source reader (migration 0005)
+
+EvidencePage includes nullable layout: version, rotated CropBox width/height/rotation, measured words (text, normalized top-left box, margin flag), readable passages (deterministic id/text/word_indices) and excluded_margin_text. Raw `text`, source_sha256 and extractor_version remain separate. No guessed coordinates or model-generated source text is returned.
+
+POST `.../documents/{id}/prepare-reader`: owned live non-archived project, Origin/CSRF required, no body. Only an extracted document missing layouts can queue the bounded upgrade; pending/already-prepared/other outcomes return 409. No automatic backfill processing on migration. Metadata returns normal queued processing state; pages become available again on successful completion. Original attachments are unchanged. Current layout identity is word-passages-v3 plus pdfplumber/pdfminer versions.
+
+Frontend evidence links identify page, passage ID, original source checksum and reader version. These are source anchors for future RAG citations; the reader itself does not generate or verify scientific claims.

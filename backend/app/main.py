@@ -100,7 +100,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def ready() -> dict[str, str]:
         def probe() -> None:
             with app.state.engine.connect() as connection:
-                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0004"
+                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0005"
                 connection.execute(text("SELECT id, token_hash, csrf_hash FROM sessions LIMIT 0"))
                 connection.execute(
                     text("SELECT id, owner_id, revision FROM research_projects LIMIT 0")

@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.modules.documents.extraction import EXTRACTOR_VERSION, TRANSIENT, extract
+from app.modules.documents.extraction import EXTRACTOR_VERSION, TRANSIENT, extract_with_layout
 from app.modules.documents.models import Document, DocumentJob, DocumentPageText
 from app.modules.documents.storage import LocalStorage
 from app.modules.identity import models as identity_models  # noqa: F401
@@ -101,6 +101,7 @@ def finish(
     token: UUID,
     pages: list[str] | None,
     error: str | None,
+    layouts: list[dict[str, object]] | None = None,
 ) -> bool:
     with factory() as db:
         document = db.get(Document, document_id)
@@ -134,7 +135,12 @@ def finish(
             db.execute(delete(DocumentPageText).where(DocumentPageText.document_id == document_id))
             db.add_all(
                 [
-                    DocumentPageText(document_id=document_id, page_number=n, text=text)
+                    DocumentPageText(
+                        document_id=document_id,
+                        page_number=n,
+                        text=text,
+                        layout=layouts[n - 1] if layouts else None,
+                    )
                     for n, text in enumerate(pages, 1)
                 ]
             )
@@ -157,8 +163,8 @@ def run_document(factory: sessionmaker[Session], storage: LocalStorage, document
     if claimed is None:
         return
     token, source_hash = claimed
-    pages, error = extract(storage.path(document_id), source_hash)
-    finish(factory, document_id, token, pages, error)
+    pages, layouts, error = extract_with_layout(storage.path(document_id), source_hash)
+    finish(factory, document_id, token, pages, error, layouts)
 
 
 def retry(db: Session, owner: UUID, project_id: UUID, document_id: UUID) -> Document:

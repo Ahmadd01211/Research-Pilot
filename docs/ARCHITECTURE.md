@@ -31,3 +31,7 @@ No Celery task is needed for a short project transaction. The document-processin
 ## Current processing phase — 19 October 2026
 
 The storage-only boundary above is superseded by durable extraction. Upload → PostgreSQL document + job (one transaction) → separate dispatcher → Redis/Celery → worker → checksum + bounded parser subprocess → PostgreSQL page text + completion activity (one transaction). The worker mounts originals read-only. Job rows serve as durable outbox intent; redispatch, claims, leases and fencing provide at-least-once safety. Polling updates the library; an owned evidence endpoint returns one physical PDF page at a time. API readiness and processing health are separate: originals can stay queued during a worker outage. No provider/embeddings/RAG/OCR runs yet. See ADR 0005 and learning/03-durable-pdf-processing.md.
+
+## Original source reader
+
+Bounded ingestion now emits raw pypdf text and a separately validated pdfplumber word/passages layout, committed together. JSONB page layouts include normalized CropBox anchors and deterministic reader-versioned passage IDs. A nullable additive migration preserves existing extractions; reader preparation is an explicit owned background upgrade. The frontend lazy-loads local PDF.js, verifies original bytes, renders a canvas with measured highlights and offers readable/raw text. No iframe, public file URL, CDN or browser provider key is used. CSP remains strict. Future Google-hosted embeddings/retrieval and independent chat generation are planned in ADR 0007, not implemented yet.

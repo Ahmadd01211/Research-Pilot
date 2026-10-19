@@ -151,6 +151,33 @@ def evidence_page(
         document_id=document_id,
         page_number=page_number,
         text=page.text,
+        layout=page.layout,
         source_sha256=paper.sha256,
         extractor_version=paper.processing.extractor_version or "unknown",
     )
+
+
+@router.post("/{document_id}/prepare-reader", response_model=DocumentRead)
+def prepare_reader(
+    project_id: UUID,
+    document_id: UUID,
+    user: User = Depends(current_user),
+    db: Session = Depends(database),
+) -> DocumentRead:
+    project = owned(db, user.id, project_id, lock=True)
+    paper = service.owned(db, user.id, project_id, document_id)
+    if project.archived_at:
+        raise HTTPException(409, "Restore the project before preparing its reader")
+    job = processing.locked_job(db, document_id)
+    first = db.get(DocumentPageText, (document_id, 1))
+    if job is None or job.state != "extracted" or (first is not None and first.layout is not None):
+        raise HTTPException(409, "Reader preparation is not needed or is already running")
+    job.state = "queued"
+    job.attempts = 0
+    job.error_code = None
+    from datetime import UTC, datetime
+
+    job.dispatch_after = datetime.now(UTC)
+    db.commit()
+    db.refresh(paper)
+    return DocumentRead.model_validate(paper)

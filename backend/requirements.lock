@@ -30,7 +30,11 @@ certifi==2026.7.22
     #   httpcore
     #   httpx
 cffi==2.1.1
-    # via argon2-cffi-bindings
+    # via
+    #   argon2-cffi-bindings
+    #   cryptography
+charset-normalizer==3.5.2
+    # via pdfminer-six
 click==8.5.0
     # via
     #   celery
@@ -44,6 +48,8 @@ click-plugins==1.1.1.2
     # via celery
 click-repl==0.4.1
     # via celery
+cryptography==50.0.2
+    # via pdfminer-six
 dnspython==2.9.0
     # via email-validator
 email-validator==2.3.0
@@ -89,6 +95,12 @@ packaging==26.3
     #   pytest
 pathspec==1.1.1
     # via mypy
+pdfminer-six==20260107
+    # via pdfplumber
+pdfplumber==0.11.10
+    # via -r requirements.in
+pillow==13.0.0
+    # via pdfplumber
 pluggy==1.7.0
     # via pytest
 prompt-toolkit==3.0.53
@@ -111,6 +123,8 @@ pygments==2.21.0
     # via pytest
 pypdf==6.21.1
     # via -r requirements.in
+pypdfium2==5.14.0
+    # via pdfplumber
 pytest==9.1.1
     # via -r requirements.in
 python-dateutil==2.9.0.post0
