@@ -12,7 +12,19 @@ from pdfplumber import __version__ as plumber_version
 from app.modules.documents.figures import figures_on_page, finalize_figures
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v7:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v8:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+
+
+def flow_bounds(word: dict[str, Any], rotation: int) -> tuple[float, float]:
+    """Compare paragraph gaps along the unrotated reading axis, not canvas y."""
+    left, top, right, bottom = word["box"]
+    if rotation == 90:
+        return 1 - right, 1 - left
+    if rotation == 180:
+        return 1 - bottom, 1 - top
+    if rotation == 270:
+        return left, right
+    return top, bottom
 
 
 def numbered_equations(words: list[dict[str, Any]], excluded: set[int]) -> list[list[int]]:
@@ -64,8 +76,17 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
         if width <= 0 or height <= 0:
             raise ValueError("Invalid page box")
         words = []
+        # With text-flow extraction pdfplumber uses char_dir even for rotated glyphs.
+        # Keep visual boxes in rotated CropBox space, but tokenize in text direction.
+        line_dir, char_dir = {90: ("ltr", "ttb"), 180: ("btt", "rtl"), 270: ("rtl", "btt")}.get(
+            page.rotation or 0, ("ttb", "ltr")
+        )
         for item in view.extract_words(
-            use_text_flow=True, expand_ligatures=True, x_tolerance_ratio=0.15
+            use_text_flow=True,
+            expand_ligatures=True,
+            x_tolerance_ratio=0.15,
+            line_dir=line_dir,
+            char_dir=char_dir,
         ):
             text = (
                 item["text"]
@@ -167,10 +188,13 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                     current = []
                     length = 0
                 continue
-            if current and (
-                word["box"][1] < layout["words"][current[-1]]["box"][1] - 0.025
-                or word["box"][1] > layout["words"][current[-1]]["box"][3] + 0.045
-            ):
+            word_top, _ = flow_bounds(word, layout["rotation"])
+            previous_top, previous_bottom = (
+                flow_bounds(layout["words"][current[-1]], layout["rotation"])
+                if current
+                else (word_top, word_top)
+            )
+            if current and (word_top < previous_top - 0.025 or word_top > previous_bottom + 0.045):
                 layout["passages"].append(
                     {
                         "text": " ".join(layout["words"][j]["text"] for j in current),

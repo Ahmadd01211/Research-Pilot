@@ -1,0 +1,119 @@
+{
+  "scope": "synthetic regression coverage, not universal PDF accuracy",
+  "cases": [
+    {
+      "status": "passed",
+      "case": "prose",
+      "words": 17,
+      "tables": 0,
+      "figures": 0,
+      "chunks": 1,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "two-columns",
+      "words": 17,
+      "tables": 0,
+      "figures": 0,
+      "chunks": 1,
+      "limitations": [
+        "token preservation checked; general column reading order is not certified"
+      ]
+    },
+    {
+      "status": "passed",
+      "case": "crop",
+      "words": 17,
+      "tables": 0,
+      "figures": 0,
+      "chunks": 1,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "rotation-90",
+      "words": 17,
+      "tables": 0,
+      "figures": 0,
+      "chunks": 1,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "rotation-180",
+      "words": 17,
+      "tables": 0,
+      "figures": 0,
+      "chunks": 1,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "rotation-270",
+      "words": 17,
+      "tables": 0,
+      "figures": 0,
+      "chunks": 1,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "definition-table",
+      "words": 30,
+      "tables": 1,
+      "figures": 0,
+      "chunks": 6,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "model-table",
+      "words": 37,
+      "tables": 1,
+      "figures": 0,
+      "chunks": 6,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "vector-figure",
+      "words": 17,
+      "tables": 0,
+      "figures": 1,
+      "chunks": 1,
+      "limitations": [
+        "full-page visual; ordinary page prose withheld"
+      ]
+    },
+    {
+      "status": "passed",
+      "case": "image-figure",
+      "words": 16,
+      "tables": 0,
+      "figures": 1,
+      "chunks": 2,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "uncaptioned-image",
+      "words": 11,
+      "tables": 0,
+      "figures": 1,
+      "chunks": 1,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "equation-baselines",
+      "words": 27,
+      "tables": 0,
+      "figures": 0,
+      "chunks": 3,
+      "limitations": [
+        "coordinate/token preservation only; mathematical semantics not certified"
+      ]
+    }
+  ]
+}

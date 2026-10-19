@@ -113,3 +113,8 @@ Reader v7 extends bounded shaded-table detection to sequential numbered model co
 
 Verification for regression-table milestone: Ruff/strict mypy, all 54 backend tests and 44 frontend tests, frontend lint/types/build and local container builds passed. Live reader smoke passed after deployment. No browser screenshot automation used; user visual review pending.
 
+## Extraction corpus and rotated text — 19 October 2026
+
+Twelve generated synthetic PDFs now run through the real reader/schema/chunker in pytest and a standalone nonzero-on-failure JSON quality report. Contracts cover prose, two-column token preservation, crop boxes, three rotations, definition/model tables, embedded/vector/uncaptioned figures and equation baselines. This is a development regression gate, not universal semantic accuracy or a per-upload RAG-ready classifier. Reader v8 fixes rotated word fragmentation and compares paragraph gaps in the unrotated reading axis. Static PDF.js overlays for all three rotations were inspected. Supplied paper was reparsed locally: page 8 retains ten table rows and three body passages plus title/notes; page 18 retains twenty rows/seven columns. Cell-level highlight controls remain distinct from row-level retrieval chunks.
+
+Verification: 66 backend tests, 45 frontend tests, Ruff/strict mypy, frontend lint/types/build pass. See docs/EXTRACTION_QUALITY.md and docs/extraction-quality-report.json. Varied real publisher samples and general mathematical/multi-column semantics remain unverified. No external AI calls, no source file changes, no new retention policy. Existing documents need an explicit reader upgrade for v8.
