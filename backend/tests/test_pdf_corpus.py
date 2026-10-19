@@ -63,6 +63,30 @@ def check_case(case):
                 "(2) Revenue: [blank in source]"
                 in [c for c in chunks if c["kind"] == "table_row"][1]["text"]
             )
+    if case in {"sectioned-numeric", "ambiguous-sectioned-numeric"}:
+        assert len(layout["tables"]) == 1
+        rows = layout["tables"][0]["rows"]
+        assert len(rows) == 9 and all(len(row) == 4 for row in rows)
+        assert [c["text"] for c in rows[0]] == [
+            "",
+            "Usage rate (%) Yes",
+            "Usage rate (%) No",
+            "Usage rate (%) Difference",
+        ]
+        if case == "sectioned-numeric":
+            assert [c["text"] for c in rows[2]] == ["Characteristic 1", "8.4", "5.3", "3.1"]
+            assert any(
+                "A. Owner characteristics | Characteristic 1 | Usage rate (%) Yes: 8.4" in c["text"]
+                and "Difference: 3.1" in c["text"]
+                for c in chunks
+            )
+            assert any("B. Startup conditions | Condition 1" in c["text"] for c in chunks)
+            assert len([c for c in chunks if c["kind"] == "table_row"]) == 7
+        else:
+            assert layout["tables"][0]["detection"] == "aligned-labelled-ambiguous"
+            assert not any(c["kind"] == "table_row" for c in chunks)
+            fallback.append("uncertain numeric alignment; table withheld from retrieval")
+        assert not any("Notes:" in c["text"] for row in rows for c in row)
     if case == "grouped-table":
         assert layout["tables"][0]["detection"] == "numbered-model-subcolumns"
         assert [cell["text"] for cell in rows[0]] == [

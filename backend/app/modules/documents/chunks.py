@@ -2,10 +2,11 @@
 
 import hashlib
 import json
+import re
 from typing import Any
 from uuid import UUID
 
-CHUNKER_VERSION = "source-types-v4"
+CHUNKER_VERSION = "source-types-v5"
 
 
 def make_chunks(
@@ -21,15 +22,36 @@ def make_chunks(
                 continue
             entries.append(("prose", passage["id"], passage["text"], {"passage_id": passage["id"]}))
         for table in layout.get("tables", []):
-            if table.get("detection") == "numbered-model-columns-ambiguous":
+            if table.get("detection", "").endswith("ambiguous"):
                 continue
+            section = ""
+            subsection = ""
             for row_number, row in enumerate(table["rows"], 1):
+                if (
+                    table.get("detection") == "aligned-labelled-columns"
+                    and row_number > 1
+                    and row[0]["text"]
+                    and not any(c["text"] for c in row[1:])
+                ):
+                    if re.match(r"^[A-Z]\.", row[0]["text"]):
+                        section = row[0]["text"]
+                        subsection = ""
+                    else:
+                        subsection = row[0]["text"]
+                    continue
                 text = " | ".join(cell["text"] for cell in row)
-                if table.get("detection", "").startswith("numbered-model-") and row_number > 1:
+                if (
+                    table.get("detection", "").startswith("numbered-model-")
+                    or table.get("detection") == "aligned-labelled-columns"
+                ) and row_number > 1:
                     text = " | ".join(
                         f"{header['text']}: {cell['text'] or '[blank in source]'}"
+                        if header["text"]
+                        else cell["text"]
                         for header, cell in zip(table["rows"][0], row, strict=True)
                     )
+                if section or subsection:
+                    text = " | ".join(value for value in [section, subsection, text] if value)
                 source_id = hashlib.sha256(
                     "|".join(cell["id"] for cell in row).encode()
                 ).hexdigest()

@@ -133,3 +133,10 @@ Reader v10 preserves repeated parent/leaf headings as separate anchored columns 
 
 Grouped-header verification: 69 backend tests and 48 frontend tests pass, including exact subcolumn values, preserved blanks, ambiguous-gutter withholding and single-cell highlights. Ruff, strict mypy, frontend lint/types and production build pass. Fifteen-case quality report refreshed.
 
+
+## Unnumbered sectioned numeric tables — 19 October 2026
+Reader v11 adds caption-validated, shaded-header unnumbered numeric tables with aligned leaf headings and measured source boxes. The supplied paper physical page 34 / printed 408 yields 38 rows and four columns: row label plus AI usage rate (%) Yes, No and Difference. Full-sample 6.0 remains outside the comparison rows. Section labels and quoted subsections remain source rows; chunker source-types-v5 carries their context into each data row and skips section-only chunks. Uncertain numeric alignment is marked and its table rows withheld from retrieval. This supports a conservative single-line numeric-table family, not arbitrary unnumbered or multiline tables. Existing uploads need an explicit reader update; originals/raw text unchanged. The synthetic corpus adds sectioned-numeric and ambiguous-sectioned-numeric cases (17 layouts total).
+
+
+Verification for unnumbered sectioned numeric tables: all 71 backend tests and 48 frontend tests pass; Ruff and strict mypy pass (40 source files), frontend lint/types and production build pass. Final 41-page source parse confirms exact 8.4/5.3/3.1 values and earlier page 8/18/20/33 table structures. Seventeen-case quality report refreshed.
+

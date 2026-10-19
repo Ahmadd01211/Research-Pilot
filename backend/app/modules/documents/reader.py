@@ -10,9 +10,10 @@ from pdfminer import __version__ as miner_version
 from pdfplumber import __version__ as plumber_version
 
 from app.modules.documents.figures import figures_on_page, finalize_figures
+from app.modules.documents.labelled_tables import labelled_tables
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v10:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v11:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def flow_bounds(word: dict[str, Any], rotation: int) -> tuple[float, float]:
@@ -112,6 +113,7 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
         if len(words) > 12000 or total_words > 200000:
             raise MemoryError
         tables = striped_tables(view, words)
+        tables += labelled_tables(view, words, tables)
         figures = figures_on_page(view, words, tables)
         layouts.append(
             {

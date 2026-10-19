@@ -143,6 +143,26 @@
       "limitations": [
         "coordinate/token preservation only; mathematical semantics not certified"
       ]
+    },
+    {
+      "status": "passed",
+      "case": "sectioned-numeric",
+      "words": 57,
+      "tables": 1,
+      "figures": 0,
+      "chunks": 10,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "ambiguous-sectioned-numeric",
+      "words": 57,
+      "tables": 1,
+      "figures": 0,
+      "chunks": 3,
+      "limitations": [
+        "uncertain numeric alignment; table withheld from retrieval"
+      ]
     }
   ]
 }

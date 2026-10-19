@@ -21,6 +21,8 @@ CASES = [
     "image-figure",
     "uncaptioned-image",
     "equation-baselines",
+    "sectioned-numeric",
+    "ambiguous-sectioned-numeric",
 ]
 
 
@@ -47,7 +49,34 @@ def corpus_pdf(case):
     def rect(x, y, w, h):
         ops.append(f"q .92 g {x} {y} {w} {h} re f Q")
 
-    if case in {"grouped-table", "ambiguous-grouped-table"}:
+    if case in {"sectioned-numeric", "ambiguous-sectioned-numeric"}:
+        text("TABLE 1 Unnumbered comparison.", 50, 720)
+        rect(50, 650, 510, 50)
+        text("Full sample", 55, 655)
+        text("Usage rate (%)", 300, 683)
+        text("6.0", 300, 670)
+        for label, x in [("Yes", 300), ("No", 400), ("Difference", 490)]:
+            text(label, x, 655)
+        text("A. Owner characteristics", 55, 625)
+        for n, y in enumerate([605, 585, 565], 1):
+            text(f"Characteristic {n}", 55, y)
+            text(
+                "12345678901234567890123456789"
+                if case == "ambiguous-sectioned-numeric" and n == 1
+                else "8.4",
+                300,
+                y,
+            )
+            text("5.3", 400, y)
+            text("3.1", 490, y)
+        text("B. Startup conditions", 55, 540)
+        for n, y in enumerate([520, 500, 480], 1):
+            text(f"Condition {n}", 55, y)
+            text("6.4", 300, y)
+            text("5.8", 400, y)
+            text("0.6", 490, y)
+        text("Notes: Verify this table against its original source.", 55, 440)
+    elif case in {"grouped-table", "ambiguous-grouped-table"}:
         rect(50, 650, 510, 50)
         for y in [570, 490]:
             rect(50, y, 510, 40)

@@ -51,3 +51,7 @@ Reader v9 supports two sequential numbered model columns when a nearby table cap
 
 The corpus now contains fifteen layouts, adding grouped parent/leaf table headers and an ambiguous crossing-gutter case. Checks assert exact labelled values, retained blank subcells, no body-word duplication and withholding uncertain table rows from retrieval.
 
+
+## Unnumbered sectioned numeric tables — 19 October 2026
+Reader v11 adds caption-validated, shaded-header unnumbered numeric tables with aligned leaf headings and measured source boxes. The supplied paper physical page 34 / printed 408 yields 38 rows and four columns: row label plus AI usage rate (%) Yes, No and Difference. Full-sample 6.0 remains outside the comparison rows. Section labels and quoted subsections remain source rows; chunker source-types-v5 carries their context into each data row and skips section-only chunks. Uncertain numeric alignment is marked and its table rows withheld from retrieval. This supports a conservative single-line numeric-table family, not arbitrary unnumbered or multiline tables. Existing uploads need an explicit reader update; originals/raw text unchanged. The synthetic corpus adds sectioned-numeric and ambiguous-sectioned-numeric cases (17 layouts total).
+
