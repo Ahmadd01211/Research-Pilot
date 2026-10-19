@@ -15,10 +15,12 @@ from app.modules.documents.models import DocumentPageText
 from app.modules.documents.reader import READER_VERSION
 from app.modules.documents.schemas import (
     DocumentPage,
+    DocumentQuality,
     DocumentRead,
     EvidencePage,
     FigureList,
     FigureRead,
+    QualityPageSummary,
     UploadResult,
 )
 from app.modules.documents.storage import LocalStorage
@@ -235,3 +237,52 @@ def figure_evidence(
                 )
             )
     return FigureList(items=items)
+
+
+@router.get("/{document_id}/quality", response_model=DocumentQuality)
+def document_quality(
+    project_id: UUID,
+    document_id: UUID,
+    user: User = Depends(current_user),
+    db: Session = Depends(database),
+) -> DocumentQuality:
+    from app.modules.documents.quality import QUALITY_VERSION
+
+    paper = service.owned(db, user.id, project_id, document_id)
+    if paper.status != "extracted":
+        raise HTTPException(409, "Text extraction has not completed")
+    rows = db.execute(
+        select(
+            DocumentPageText.page_number,
+            DocumentPageText.layout["version"],
+            DocumentPageText.layout["quality"],
+        )
+        .where(DocumentPageText.document_id == document_id)
+        .order_by(DocumentPageText.page_number)
+    )
+    pages = []
+    links = 0
+    for number, version, quality in rows:
+        current = (
+            version == READER_VERSION and quality and quality.get("version") == QUALITY_VERSION
+        )
+        pages.append(
+            QualityPageSummary(
+                page_number=number,
+                state=quality["state"] if current else "not_assessed",
+                findings=quality["findings"] if current else [],
+            )
+        )
+        if current:
+            links += quality["link_count"]
+    return DocumentQuality(
+        document_id=document_id,
+        source_sha256=paper.sha256,
+        reader_version=READER_VERSION,
+        pages=pages,
+        checked_pages=sum(p.state == "checked" for p in pages),
+        review_pages=sum(p.state == "needs_review" for p in pages),
+        blocked_pages=sum(p.state == "blocked" for p in pages),
+        not_assessed_pages=sum(p.state == "not_assessed" for p in pages),
+        link_count=links,
+    )

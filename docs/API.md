@@ -67,3 +67,7 @@ Evidence layouts now include tables (box, detection method, rows of anchored cel
 ## Figure evidence milestone
 
 Owned GET /api/v1/projects/{project_id}/documents/{document_id}/figures returns source captions, crop/page fallback, source identity and explicit author-discussion anchors; foreign/removed resources are hidden. Figures require completed extraction.
+
+## Links and quality assessment
+
+Owned GET /api/v1/projects/{project_id}/documents/{document_id}/quality returns current source/reader/quality identity, per-page findings, checked/review/blocked/unassessed page counts and actual retained-link count. EvidencePage layout includes links and quality. Foreign/removed resources are hidden; incomplete extraction returns 409.

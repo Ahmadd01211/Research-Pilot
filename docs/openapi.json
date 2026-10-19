@@ -101,6 +101,63 @@
         "title": "DocumentPage",
         "type": "object"
       },
+      "DocumentQuality": {
+        "properties": {
+          "blocked_pages": {
+            "title": "Blocked Pages",
+            "type": "integer"
+          },
+          "checked_pages": {
+            "title": "Checked Pages",
+            "type": "integer"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "link_count": {
+            "title": "Link Count",
+            "type": "integer"
+          },
+          "not_assessed_pages": {
+            "title": "Not Assessed Pages",
+            "type": "integer"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/QualityPageSummary"
+            },
+            "title": "Pages",
+            "type": "array"
+          },
+          "reader_version": {
+            "title": "Reader Version",
+            "type": "string"
+          },
+          "review_pages": {
+            "title": "Review Pages",
+            "type": "integer"
+          },
+          "source_sha256": {
+            "title": "Source Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "source_sha256",
+          "reader_version",
+          "pages",
+          "checked_pages",
+          "review_pages",
+          "blocked_pages",
+          "not_assessed_pages",
+          "link_count"
+        ],
+        "title": "DocumentQuality",
+        "type": "object"
+      },
       "DocumentRead": {
         "properties": {
           "byte_size": {
@@ -388,6 +445,78 @@
           "password"
         ],
         "title": "LoginInput",
+        "type": "object"
+      },
+      "PageQuality": {
+        "properties": {
+          "block_page": {
+            "title": "Block Page",
+            "type": "boolean"
+          },
+          "blocked_passage_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blocked Passage Ids",
+            "type": "array"
+          },
+          "blocked_table_indices": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Blocked Table Indices",
+            "type": "array"
+          },
+          "eligible_units": {
+            "title": "Eligible Units",
+            "type": "integer"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/QualityFinding"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "link_count": {
+            "title": "Link Count",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "checked",
+              "needs_review",
+              "blocked"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          },
+          "withheld_passages": {
+            "title": "Withheld Passages",
+            "type": "integer"
+          },
+          "withhold_prose": {
+            "title": "Withhold Prose",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "version",
+          "state",
+          "findings",
+          "block_page",
+          "withhold_prose",
+          "blocked_passage_ids",
+          "blocked_table_indices",
+          "eligible_units",
+          "withheld_passages",
+          "link_count"
+        ],
+        "title": "PageQuality",
         "type": "object"
       },
       "ProcessingRead": {
@@ -730,6 +859,76 @@
         "title": "ProjectTransition",
         "type": "object"
       },
+      "QualityFinding": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "page",
+              "prose",
+              "passage",
+              "table",
+              "links"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "block",
+              "warning"
+            ],
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "severity",
+          "scope"
+        ],
+        "title": "QualityFinding",
+        "type": "object"
+      },
+      "QualityPageSummary": {
+        "properties": {
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/QualityFinding"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "checked",
+              "needs_review",
+              "blocked",
+              "not_assessed"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "page_number",
+          "state"
+        ],
+        "title": "QualityPageSummary",
+        "type": "object"
+      },
       "ReadablePassage": {
         "properties": {
           "id": {
@@ -791,12 +990,29 @@
             "title": "Height",
             "type": "number"
           },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/SourceLink"
+            },
+            "title": "Links",
+            "type": "array"
+          },
           "passages": {
             "items": {
               "$ref": "#/components/schemas/ReadablePassage"
             },
             "title": "Passages",
             "type": "array"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageQuality"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rotation": {
             "title": "Rotation",
@@ -949,6 +1165,107 @@
           "related_passages"
         ],
         "title": "SourceFigure",
+        "type": "object"
+      },
+      "SourceLink": {
+        "properties": {
+          "box": {
+            "maxItems": 4,
+            "minItems": 4,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Box",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "origin": {
+            "enum": [
+              "annotation",
+              "visible_url",
+              "visible_doi"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Ids",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "allowed",
+              "blocked",
+              "internal",
+              "unresolved"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "target_page": {
+            "anyOf": [
+              {
+                "maximum": 300.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Page"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "word_indices": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Word Indices",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "box",
+          "text",
+          "word_indices",
+          "status",
+          "origin",
+          "source_ids"
+        ],
+        "title": "SourceLink",
         "type": "object"
       },
       "SourceTable": {
@@ -2133,6 +2450,59 @@
           }
         },
         "summary": "Prepare Reader",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/documents/{document_id}/quality": {
+      "get": {
+        "operationId": "document_quality_api_v1_projects__project_id__documents__document_id__quality_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentQuality"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Document Quality",
         "tags": [
           "documents"
         ]

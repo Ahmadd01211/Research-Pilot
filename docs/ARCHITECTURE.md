@@ -40,3 +40,7 @@ Bounded ingestion now emits raw pypdf text and a separately validated pdfplumber
 ## Figure evidence milestone
 
 Reader v5 identifies conservative figure evidence; source-type-v1 chunks publish transactionally with page layouts. No embeddings or image inference is performed. See ADR 0008 and learning/05-figure-evidence.md.
+
+## Links and quality assessment
+
+Automatic extraction now flows through passive PDF link extraction, versioned per-page quality assessment and gated chunk creation. The parser does not fetch linked sites. Reports are computed from owned, current stored page projections. See learning/06-links-and-quality.md.

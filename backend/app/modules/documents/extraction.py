@@ -8,6 +8,7 @@ from pathlib import Path
 from pdfplumber import __version__ as layout_version
 from pypdf import __version__
 
+from app.modules.documents.links import safe_target
 from app.modules.documents.schemas import ReaderLayout
 
 EXTRACTOR_VERSION = (
@@ -64,6 +65,24 @@ def extract_with_layout(
             for word in layout.words:
                 a, b, c, d = word.box
                 if not 0 <= a < c <= 1 or not 0 <= b < d <= 1:
+                    return None, None, "invalid_pdf"
+            if len(layout.links) > 500:
+                return None, None, "resource_limit"
+            for link in layout.links:
+                a, b, c, d = link.box
+                if (
+                    not 0 <= a < c <= 1
+                    or not 0 <= b < d <= 1
+                    or any(not 0 <= i < len(layout.words) for i in link.word_indices)
+                ):
+                    return None, None, "invalid_pdf"
+                if link.status == "allowed" and safe_target(link.target) != link.target:
+                    return None, None, "invalid_pdf"
+                if link.status == "allowed" and link.target is None:
+                    return None, None, "invalid_pdf"
+                if link.status == "internal" and (
+                    link.target_page is None or not 1 <= link.target_page <= len(checked)
+                ):
                     return None, None, "invalid_pdf"
             for figure in layout.figures:
                 if figure.box:

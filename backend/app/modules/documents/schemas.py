@@ -70,6 +70,56 @@ class FigureList(BaseModel):
     items: list[FigureRead]
 
 
+class SourceLink(BaseModel):
+    id: str
+    box: tuple[float, float, float, float]
+    text: str
+    word_indices: list[int]
+    target: str | None = Field(default=None, max_length=2048)
+    target_page: int | None = Field(default=None, ge=1, le=300)
+    status: Literal["allowed", "blocked", "internal", "unresolved"]
+    origin: Literal["annotation", "visible_url", "visible_doi"]
+    source_ids: list[str]
+
+
+class QualityFinding(BaseModel):
+    code: str
+    message: str
+    severity: Literal["block", "warning"]
+    scope: Literal["page", "prose", "passage", "table", "links"]
+
+
+class PageQuality(BaseModel):
+    version: str
+    state: Literal["checked", "needs_review", "blocked"]
+    findings: list[QualityFinding]
+    block_page: bool
+    withhold_prose: bool
+    blocked_passage_ids: list[str]
+    blocked_table_indices: list[int]
+    eligible_units: int
+    withheld_passages: int
+    link_count: int
+
+
+class QualityPageSummary(BaseModel):
+    page_number: int
+    state: Literal["checked", "needs_review", "blocked", "not_assessed"]
+    findings: list[QualityFinding] = Field(default_factory=list)
+
+
+class DocumentQuality(BaseModel):
+    document_id: UUID
+    source_sha256: str
+    reader_version: str
+    pages: list[QualityPageSummary]
+    checked_pages: int
+    review_pages: int
+    blocked_pages: int
+    not_assessed_pages: int
+    link_count: int
+
+
 class ReaderLayout(BaseModel):
     version: str
     width: float
@@ -79,6 +129,8 @@ class ReaderLayout(BaseModel):
     passages: list[ReadablePassage]
     figures: list[SourceFigure] = Field(default_factory=list)
     tables: list[SourceTable] = Field(default_factory=list)
+    links: list[SourceLink] = Field(default_factory=list)
+    quality: PageQuality | None = None
     excluded_margin_text: list[str]
 
 

@@ -43,3 +43,7 @@ Reader preparation uses existing ownership/CSRF/project locks and is allowed onl
 ## Figure evidence milestone
 
 Figure previews use owned, checksum-verified originals locally. No external image URL or vision API is used. Uncertain figure-page prose is withheld from retrieval preparation. Caption detection is heuristic, not an accuracy guarantee.
+
+## Links and quality assessment
+
+PDF links are passive: only HTTP(S), simple mailto and resolved local PDF destinations become navigation controls. Scripts, file/remote-file and unsupported actions are disabled, and malformed links do not execute. External navigation is explicit and uses no referrer/no opener. No linked content is ingested automatically. Quality gates are heuristic safeguards, not a correctness guarantee.

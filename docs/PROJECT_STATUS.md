@@ -158,3 +158,11 @@ Reader v14 conservatively separates first-page publication metadata, title, auth
 
 Front-matter verification: all 76 backend tests and 49 frontend tests pass, Ruff/strict mypy pass (41 source files), frontend lint/types/build and regenerated OpenAPI/types pass. Twenty-two-case quality report refreshed. Source-metadata blocks remain highlightable while excluded from generated evidence chunks; abstract remains eligible.
 
+## Passive PDF links and automatic quality gates — 19 October 2026
+
+Reader v15 adds source-linked HTTP(S)/simple-mailto/direct-and-named PDF destinations plus visible complete URL/DOI capture, with bounded parsing and no network fetching/action execution. Cropped/rotated annotation coordinates come from the root page before normalization. Unsafe and unsupported actions are disabled; unresolved destinations are not guessed. Source links carry page boxes, measured text and source anchors. Chunker source-types-v7 associates safe link destinations as metadata and enforces versioned evidence-quality-v1 gates before publishing chunks. Automatic assessments flag unstructured/ambiguous tables, bad anchors/boxes, undecodable/fragmented/numeric text, uncertain figures and unsupported metadata/empty pages; original/raw/readable content remains inspectable. Owned document quality endpoint and reader panel summarize current page states and review navigation. Old/stale layouts are Not assessed; current preparation is automatic for new uploads, while existing originals require explicit reader upgrade. No model calls or linked-webpage ingestion occurs.
+
+The supplied 41-page paper retained 60 allowed external/email/DOI links and 359 internal links; current checks produced 29 checked pages, six needing review and six with evidence withheld. More unsupported tables are exposed rather than silently indexed. These heuristics do not guarantee correctness; conservative withholding reduces recall. No retention/purge/conflict policy changes. See learning/06-links-and-quality.md for actual code flow, states and limits.
+
+Verified locally: 97 backend tests and 55 frontend tests passed; Ruff, mypy, frontend lint/type checks and production build passed. Deployed upload/worker/link/quality and PDF-reader smoke checks passed. Existing documents require an explicit reader update; new uploads are assessed automatically.
+

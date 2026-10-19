@@ -24,3 +24,7 @@ While implementing ingestion, preserve the ability to cancel processing and clea
 ## Figure evidence milestone
 
 Completed figure source cards and typed chunk preparation. Next: Google embedding configuration, version-aware indexing and owned source-scoped retrieval; then cited Research Chat with figure cards and abstention. Complete historical source navigation, conflict reconciliation and Trash/purge remain pending.
+
+## Links and quality assessment
+
+Completed passive source links and per-page/document automatic evidence checks, with current-version gates and visible review states. Next: review unresolved-layout coverage, configure Google embeddings and implement version-scoped indexing/retrieval. No provider key, embedding request or answer generation was introduced.

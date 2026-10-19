@@ -85,3 +85,7 @@ Nullable document_pages.layout JSONB stores reader identity, rotated CropBox siz
 ## Figure evidence milestone
 
 Migration 0006 adds evidence_chunks with source checksum, reader/chunker version, physical page, source anchor, kind (prose/table_row/figure_caption), text and metadata. Deterministic IDs provide idempotency. Prior versions are retained; this is not a complete historical-reader UI.
+
+## Links and quality assessment
+
+Reader v15 adds links and quality objects to existing document_pages.layout JSONB. No schema migration is needed. Evidence chunks retain safe source-link metadata and assessment version; old derived versions remain retained. Select only current identities for future indexing.

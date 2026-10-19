@@ -298,6 +298,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/documents/{document_id}/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Document Quality */
+        get: operations["document_quality_api_v1_projects__project_id__documents__document_id__quality_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/documents/{document_id}/retry": {
         parameters: {
             query?: never;
@@ -373,6 +390,30 @@ export interface components {
             items: components["schemas"]["DocumentRead"][];
             /** Total */
             total: number;
+        };
+        /** DocumentQuality */
+        DocumentQuality: {
+            /** Blocked Pages */
+            blocked_pages: number;
+            /** Checked Pages */
+            checked_pages: number;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Link Count */
+            link_count: number;
+            /** Not Assessed Pages */
+            not_assessed_pages: number;
+            /** Pages */
+            pages: components["schemas"]["QualityPageSummary"][];
+            /** Reader Version */
+            reader_version: string;
+            /** Review Pages */
+            review_pages: number;
+            /** Source Sha256 */
+            source_sha256: string;
         };
         /** DocumentRead */
         DocumentRead: {
@@ -492,6 +533,32 @@ export interface components {
              */
             password: string;
         };
+        /** PageQuality */
+        PageQuality: {
+            /** Block Page */
+            block_page: boolean;
+            /** Blocked Passage Ids */
+            blocked_passage_ids: string[];
+            /** Blocked Table Indices */
+            blocked_table_indices: number[];
+            /** Eligible Units */
+            eligible_units: number;
+            /** Findings */
+            findings: components["schemas"]["QualityFinding"][];
+            /** Link Count */
+            link_count: number;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "checked" | "needs_review" | "blocked";
+            /** Version */
+            version: string;
+            /** Withheld Passages */
+            withheld_passages: number;
+            /** Withhold Prose */
+            withhold_prose: boolean;
+        };
         /** ProcessingRead */
         ProcessingRead: {
             /** Attempts */
@@ -591,6 +658,35 @@ export interface components {
             /** Expected Revision */
             expected_revision: number;
         };
+        /** QualityFinding */
+        QualityFinding: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "page" | "prose" | "passage" | "table" | "links";
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "block" | "warning";
+        };
+        /** QualityPageSummary */
+        QualityPageSummary: {
+            /** Findings */
+            findings?: components["schemas"]["QualityFinding"][];
+            /** Page Number */
+            page_number: number;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "checked" | "needs_review" | "blocked" | "not_assessed";
+        };
         /** ReadablePassage */
         ReadablePassage: {
             /** Id */
@@ -614,8 +710,11 @@ export interface components {
             figures?: components["schemas"]["SourceFigure"][];
             /** Height */
             height: number;
+            /** Links */
+            links?: components["schemas"]["SourceLink"][];
             /** Passages */
             passages: components["schemas"]["ReadablePassage"][];
+            quality?: components["schemas"]["PageQuality"] | null;
             /** Rotation */
             rotation: number;
             /** Tables */
@@ -666,6 +765,38 @@ export interface components {
             label: string;
             /** Related Passages */
             related_passages: components["schemas"]["FigureDiscussion"][];
+        };
+        /** SourceLink */
+        SourceLink: {
+            /** Box */
+            box: [
+                number,
+                number,
+                number,
+                number
+            ];
+            /** Id */
+            id: string;
+            /**
+             * Origin
+             * @enum {string}
+             */
+            origin: "annotation" | "visible_url" | "visible_doi";
+            /** Source Ids */
+            source_ids: string[];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "allowed" | "blocked" | "internal" | "unresolved";
+            /** Target */
+            target?: string | null;
+            /** Target Page */
+            target_page?: number | null;
+            /** Text */
+            text: string;
+            /** Word Indices */
+            word_indices: number[];
         };
         /** SourceTable */
         SourceTable: {
@@ -1388,6 +1519,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    document_quality_api_v1_projects__project_id__documents__document_id__quality_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentQuality"];
                 };
             };
             /** @description Validation Error */

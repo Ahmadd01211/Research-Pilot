@@ -213,6 +213,9 @@ def check_case(case):
     assert raw
     return {
         "case": case,
+        "assessment": layout["quality"]["state"],
+        "quality_findings": [finding["code"] for finding in layout["quality"]["findings"]],
+        "links": len(layout["links"]),
         "words": len(words),
         "tables": len(layout["tables"]),
         "figures": len(layout["figures"]),

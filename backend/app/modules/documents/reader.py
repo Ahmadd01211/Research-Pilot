@@ -13,9 +13,11 @@ from pdfplumber import __version__ as plumber_version
 from app.modules.documents.figures import figures_on_page, finalize_figures
 from app.modules.documents.front_matter import front_matter
 from app.modules.documents.labelled_tables import labelled_tables
+from app.modules.documents.links import finalize_links, page_links
+from app.modules.documents.quality import assess_page
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v14:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v15:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def flow_bounds(word: dict[str, Any], rotation: int) -> tuple[float, float]:
@@ -107,6 +109,10 @@ def numbered_equations(words: list[dict[str, Any]], excluded: set[int]) -> list[
 def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
     layouts = []
     total_words = 0
+    total_links = 0
+    page_ids = {
+        page.page_obj.pageid: n for n, page in enumerate(pdf.pages, 1) if hasattr(page, "page_obj")
+    }
     for page in pdf.pages:
         # pdfplumber uses rotated, top-origin boxes. PDF.js renders the CropBox.
         crop = page.cropbox or page.bbox
@@ -154,6 +160,10 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
         tables = striped_tables(view, words)
         tables += labelled_tables(view, words, tables)
         figures = figures_on_page(view, words, tables)
+        links = page_links(view, words, page_ids, len(pdf.pages))
+        total_links += len(links)
+        if total_links > 5000:
+            raise MemoryError
         layouts.append(
             {
                 "version": READER_VERSION,
@@ -164,6 +174,7 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                 "passages": [],
                 "tables": tables,
                 "figures": figures,
+                "links": links,
                 "excluded_margin_text": [],
             }
         )
@@ -304,4 +315,7 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                 json.dumps(content, ensure_ascii=True, separators=(",", ":")).encode()
             ).hexdigest()
     finalize_figures(layouts, READER_VERSION)
+    for number, layout in enumerate(layouts, 1):
+        finalize_links(layout, number)
+        layout["quality"] = assess_page(layout)
     return layouts

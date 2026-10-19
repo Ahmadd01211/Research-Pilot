@@ -6,7 +6,9 @@ import re
 from typing import Any
 from uuid import UUID
 
-CHUNKER_VERSION = "source-types-v6"
+from app.modules.documents.quality import assess_page
+
+CHUNKER_VERSION = "source-types-v7"
 
 
 def make_chunks(
@@ -15,8 +17,15 @@ def make_chunks(
     chunks = []
     for number, layout in enumerate(layouts, 1):
         entries = []
-        uncertain = any(f["box"] is None for f in layout.get("figures", []))
+        quality = assess_page(layout) if "words" in layout else None
+        if quality and quality["block_page"]:
+            continue
+        uncertain = any(f["box"] is None for f in layout.get("figures", [])) or bool(
+            quality and quality["withhold_prose"]
+        )
         for passage in [] if uncertain else layout["passages"]:
+            if quality and passage["id"] in quality["blocked_passage_ids"]:
+                continue
             if passage.get("role", "body") not in {"body", "abstract"}:
                 continue
             # Undecodable mathematical font glyphs must not become answer evidence.
@@ -30,7 +39,9 @@ def make_chunks(
                     {"passage_id": passage["id"], "evidence_role": passage.get("role", "body")},
                 )
             )
-        for table in layout.get("tables", []):
+        for table_index, table in enumerate(layout.get("tables", [])):
+            if quality and table_index in quality["blocked_table_indices"]:
+                continue
             if table.get("detection", "").endswith("ambiguous"):
                 continue
             section = ""
@@ -93,6 +104,19 @@ def make_chunks(
         for kind, source_id, text, metadata in entries:
             if not text.strip():
                 continue
+            anchors = {source_id, *metadata.get("cell_ids", [])}
+            metadata["links"] = [
+                {
+                    "id": link["id"],
+                    "target": link["target"],
+                    "target_page": link["target_page"],
+                    "origin": link["origin"],
+                }
+                for link in layout.get("links", [])
+                if link["status"] in {"allowed", "internal"}
+                and anchors.intersection(link["source_ids"])
+            ]
+            metadata["quality_version"] = quality["version"] if quality else "legacy-unassessed"
             identity = [
                 str(document_id),
                 source_hash,

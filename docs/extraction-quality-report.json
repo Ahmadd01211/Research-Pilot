@@ -4,6 +4,9 @@
     {
       "status": "passed",
       "case": "prose",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 17,
       "tables": 0,
       "figures": 0,
@@ -13,6 +16,9 @@
     {
       "status": "passed",
       "case": "two-columns",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 17,
       "tables": 0,
       "figures": 0,
@@ -24,6 +30,9 @@
     {
       "status": "passed",
       "case": "crop",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 17,
       "tables": 0,
       "figures": 0,
@@ -33,6 +42,9 @@
     {
       "status": "passed",
       "case": "rotation-90",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 17,
       "tables": 0,
       "figures": 0,
@@ -42,6 +54,9 @@
     {
       "status": "passed",
       "case": "rotation-180",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 17,
       "tables": 0,
       "figures": 0,
@@ -51,6 +66,9 @@
     {
       "status": "passed",
       "case": "rotation-270",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 17,
       "tables": 0,
       "figures": 0,
@@ -60,6 +78,9 @@
     {
       "status": "passed",
       "case": "definition-table",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 30,
       "tables": 1,
       "figures": 0,
@@ -69,6 +90,9 @@
     {
       "status": "passed",
       "case": "model-table",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 42,
       "tables": 1,
       "figures": 0,
@@ -78,6 +102,9 @@
     {
       "status": "passed",
       "case": "two-model-table",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 40,
       "tables": 1,
       "figures": 0,
@@ -87,6 +114,9 @@
     {
       "status": "passed",
       "case": "grouped-table",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 42,
       "tables": 1,
       "figures": 0,
@@ -96,6 +126,11 @@
     {
       "status": "passed",
       "case": "ambiguous-grouped-table",
+      "assessment": "needs_review",
+      "quality_findings": [
+        "uncertain_table"
+      ],
+      "links": 0,
       "words": 42,
       "tables": 1,
       "figures": 0,
@@ -107,6 +142,11 @@
     {
       "status": "passed",
       "case": "vector-figure",
+      "assessment": "needs_review",
+      "quality_findings": [
+        "uncertain_figure_boundary"
+      ],
+      "links": 0,
       "words": 17,
       "tables": 0,
       "figures": 1,
@@ -118,6 +158,9 @@
     {
       "status": "passed",
       "case": "image-figure",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 16,
       "tables": 0,
       "figures": 1,
@@ -127,6 +170,9 @@
     {
       "status": "passed",
       "case": "uncaptioned-image",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 11,
       "tables": 0,
       "figures": 1,
@@ -136,6 +182,9 @@
     {
       "status": "passed",
       "case": "equation-baselines",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 27,
       "tables": 0,
       "figures": 0,
@@ -147,6 +196,9 @@
     {
       "status": "passed",
       "case": "front-matter",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 1,
       "words": 54,
       "tables": 0,
       "figures": 0,
@@ -156,10 +208,15 @@
     {
       "status": "passed",
       "case": "front-matter-unanchored",
+      "assessment": "needs_review",
+      "quality_findings": [
+        "unclassified_front_matter"
+      ],
+      "links": 1,
       "words": 42,
       "tables": 0,
       "figures": 0,
-      "chunks": 3,
+      "chunks": 2,
       "limitations": [
         "missing body anchor; front-matter classification not inferred"
       ]
@@ -167,6 +224,9 @@
     {
       "status": "passed",
       "case": "section-heading",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 24,
       "tables": 0,
       "figures": 0,
@@ -176,6 +236,9 @@
     {
       "status": "passed",
       "case": "decimal-prose",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 25,
       "tables": 0,
       "figures": 0,
@@ -185,6 +248,9 @@
     {
       "status": "passed",
       "case": "summary-table",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 80,
       "tables": 1,
       "figures": 0,
@@ -194,6 +260,9 @@
     {
       "status": "passed",
       "case": "sectioned-numeric",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
       "words": 57,
       "tables": 1,
       "figures": 0,
@@ -203,6 +272,11 @@
     {
       "status": "passed",
       "case": "ambiguous-sectioned-numeric",
+      "assessment": "needs_review",
+      "quality_findings": [
+        "uncertain_table"
+      ],
+      "links": 0,
       "words": 57,
       "tables": 1,
       "figures": 0,
