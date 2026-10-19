@@ -86,6 +86,26 @@
     },
     {
       "status": "passed",
+      "case": "grouped-table",
+      "words": 42,
+      "tables": 1,
+      "figures": 0,
+      "chunks": 7,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "ambiguous-grouped-table",
+      "words": 42,
+      "tables": 1,
+      "figures": 0,
+      "chunks": 1,
+      "limitations": [
+        "crossing subcolumn gutter; table withheld from retrieval"
+      ]
+    },
+    {
+      "status": "passed",
       "case": "vector-figure",
       "words": 17,
       "tables": 0,

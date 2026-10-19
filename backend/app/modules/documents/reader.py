@@ -12,7 +12,7 @@ from pdfplumber import __version__ as plumber_version
 from app.modules.documents.figures import figures_on_page, finalize_figures
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v9:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v10:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def flow_bounds(word: dict[str, Any], rotation: int) -> tuple[float, float]:

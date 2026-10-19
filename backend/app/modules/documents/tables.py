@@ -4,6 +4,78 @@ import re
 from typing import Any
 
 
+def expand_model_subcolumns(
+    rows: list[list[dict[str, Any]]], words: list[dict[str, Any]], height: float
+) -> tuple[list[list[dict[str, Any]]], str]:
+    """Flatten repeated leaf headings while retaining measured parent-word anchors.
+
+    Require matching alphabetic leaf labels in every model group and empty
+    vertical gutters through all body rows. Never split by counting numbers.
+    """
+    specifications = []
+    for col, header in enumerate(rows[0][1:], 1):
+        indices = header["word_indices"]
+        if not indices:
+            return rows, "numbered-model-columns"
+        baseline = max((words[i]["box"][1] + words[i]["box"][3]) / 2 for i in indices)
+        leaves = sorted(
+            [
+                i
+                for i in indices
+                if abs((words[i]["box"][1] + words[i]["box"][3]) / 2 - baseline) * height <= 3
+            ],
+            key=lambda i: words[i]["box"][0],
+        )
+        if not 2 <= len(leaves) <= 6 or not all(
+            re.fullmatch(r"[A-Za-z][A-Za-z-]*", words[i]["text"]) for i in leaves
+        ):
+            return rows, "numbered-model-columns"
+        parent = [i for i in indices if i not in leaves]
+        if not parent:
+            return rows, "numbered-model-columns"
+        specifications.append((col, parent, leaves))
+    labels = [[words[i]["text"].casefold() for i in leaves] for _, _, leaves in specifications]
+    if len(labels) < 2 or any(label != labels[0] for label in labels[1:]):
+        return rows, "numbered-model-columns"
+    expanded = [[rows[0][0]]]
+    for _ in rows[1:]:
+        expanded.append([])
+    for row_index, row in enumerate(rows[1:], 1):
+        expanded[row_index].append(row[0])
+    for col, parent, leaves in specifications:
+        splits = [
+            (words[a]["box"][2] + words[b]["box"][0]) / 2
+            for a, b in zip(leaves, leaves[1:], strict=False)
+        ]
+        body_indices = [i for row in rows[1:] for i in row[col]["word_indices"]]
+        if any(
+            words[a]["box"][2] >= words[b]["box"][0]
+            for a, b in zip(leaves, leaves[1:], strict=False)
+        ) or any(
+            words[i]["box"][0] < split < words[i]["box"][2]
+            for split in splits
+            for i in body_indices
+        ):
+            return rows, "numbered-model-columns-ambiguous"
+        for leaf in leaves:
+            selected = parent + [leaf]
+            expanded[0].append(
+                {"text": " ".join(words[i]["text"] for i in selected), "word_indices": selected}
+            )
+        edges = [0.0, *splits, 1.0]
+        for row_index, row in enumerate(rows[1:], 1):
+            for left, right in zip(edges, edges[1:], strict=False):
+                selected = [
+                    i
+                    for i in row[col]["word_indices"]
+                    if left <= (words[i]["box"][0] + words[i]["box"][2]) / 2 < right
+                ]
+                expanded[row_index].append(
+                    {"text": " ".join(words[i]["text"] for i in selected), "word_indices": selected}
+                )
+    return expanded, "numbered-model-subcolumns"
+
+
 def striped_tables(view: Any, words: list[dict[str, Any]]) -> list[dict[str, Any]]:
     x, y, right, bottom = view.bbox
     width, height = right - x, bottom - y
@@ -157,13 +229,14 @@ def striped_tables(view: Any, words: list[dict[str, Any]]) -> list[dict[str, Any
                 break
             rows.append(cells)
         if 3 <= len(rows) <= 100:
+            detection = "numbered-model-columns" if model_table else "alternating-shade-with-gutter"
+            if model_table:
+                rows, detection = expand_model_subcolumns(rows, words, height)
             result.append(
                 {
                     "box": bbox,
                     "rows": rows,
-                    "detection": "numbered-model-columns"
-                    if model_table
-                    else "alternating-shade-with-gutter",
+                    "detection": detection,
                 }
             )
     return result

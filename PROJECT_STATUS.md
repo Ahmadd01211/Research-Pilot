@@ -126,3 +126,10 @@ User confirmed page-18 columns were available; this was not missing extraction. 
 ## Two-model regression table correction — 19 October 2026
 Reader v9 supports two sequential numbered model columns when a nearby table caption is present, while retaining measured empty-gutter and shaded-boundary validation. Half-point closing-rule tolerance handles contiguous shading/rule coordinate rounding without creating empty rows. Supplied paper physical page 20 / printed 394 now yields one three-column, thirteen-row table: both model headings remain in its header row; title, notes and body prose are separate. Page-8 ten-row and page-18 twenty-row tables remain intact. The original synthetic corpus now contains thirteen layouts, including a captioned two-model table, and checks caption/table separation. Existing uploads require the explicit reader upgrade; original/raw text unchanged.
 
+
+## Grouped table subcolumns — 19 October 2026
+Reader v10 preserves repeated parent/leaf headings as separate anchored columns when measured body gutters support the split. Parent headers are repeated with each leaf (for example Firm-weighted Share versus Firm-weighted Rank). Physical page 33 / printed 407 has five columns and 32 rows; New Orleans retains 7.4, 5, 4, 37 separately. Prior page-8, page-18 and page-20 table shapes remain intact. Chunker source-types-v4 includes each flattened column heading with row values; ambiguous crossing gutters are marked and their table rows are withheld from retrieval, with a reader warning. This is conservative grouped-header support, not general merged-cell inference. Existing documents need Update readable text and highlights. All originals/raw text retained.
+
+
+Grouped-header verification: 69 backend tests and 48 frontend tests pass, including exact subcolumn values, preserved blanks, ambiguous-gutter withholding and single-cell highlights. Ruff, strict mypy, frontend lint/types and production build pass. Fifteen-case quality report refreshed.
+

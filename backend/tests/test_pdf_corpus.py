@@ -42,7 +42,18 @@ def check_case(case):
         rows = layout["tables"][0]["rows"]
         assert len(rows) == 6
         assert all(
-            len(row) == (4 if case == "model-table" else 3 if case == "two-model-table" else 2)
+            len(row)
+            == (
+                5
+                if case == "grouped-table"
+                else 3
+                if case == "ambiguous-grouped-table"
+                else 4
+                if case == "model-table"
+                else 3
+                if case == "two-model-table"
+                else 2
+            )
             for row in rows
         )
         assert not body & table
@@ -52,6 +63,28 @@ def check_case(case):
                 "(2) Revenue: [blank in source]"
                 in [c for c in chunks if c["kind"] == "table_row"][1]["text"]
             )
+    if case == "grouped-table":
+        assert layout["tables"][0]["detection"] == "numbered-model-subcolumns"
+        assert [cell["text"] for cell in rows[0]] == [
+            "Location",
+            "(1) Firm-weighted Share",
+            "(1) Firm-weighted Rank",
+            "(2) Employment-weighted Share",
+            "(2) Employment-weighted Rank",
+        ]
+        assert [cell["text"] for cell in rows[1]] == ["City 1", "1.4", "11", "1.8", "21"]
+        assert rows[2][2]["text"] == ""
+        body_ids = [i for row in rows[1:] for cell in row for i in cell["word_indices"]]
+        assert len(body_ids) == len(set(body_ids))
+        assert any(
+            "(1) Firm-weighted Share: 1.4" in c["text"]
+            and "(2) Employment-weighted Rank: 21" in c["text"]
+            for c in chunks
+        )
+    if case == "ambiguous-grouped-table":
+        assert layout["tables"][0]["detection"] == "numbered-model-columns-ambiguous"
+        assert not any(c["kind"] == "table_row" for c in chunks)
+        fallback.append("crossing subcolumn gutter; table withheld from retrieval")
     if case == "two-model-table":
         assert rows[0][1]["text"] == "(1) Revenue"
         assert rows[0][2]["text"] == "(2) Revenue"

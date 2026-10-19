@@ -48,3 +48,6 @@ Existing documents require Update readable text and highlights to use reader v8.
 ## Two-model regression table correction — 19 October 2026
 Reader v9 supports two sequential numbered model columns when a nearby table caption is present, while retaining measured empty-gutter and shaded-boundary validation. Half-point closing-rule tolerance handles contiguous shading/rule coordinate rounding without creating empty rows. Supplied paper physical page 20 / printed 394 now yields one three-column, thirteen-row table: both model headings remain in its header row; title, notes and body prose are separate. Page-8 ten-row and page-18 twenty-row tables remain intact. The original synthetic corpus now contains thirteen layouts, including a captioned two-model table, and checks caption/table separation. Existing uploads require the explicit reader upgrade; original/raw text unchanged.
 
+
+The corpus now contains fifteen layouts, adding grouped parent/leaf table headers and an ambiguous crossing-gutter case. Checks assert exact labelled values, retained blank subcells, no body-word duplication and withholding uncertain table rows from retrieval.
+

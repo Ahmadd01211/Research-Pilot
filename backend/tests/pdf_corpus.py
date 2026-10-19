@@ -15,6 +15,8 @@ CASES = [
     "definition-table",
     "model-table",
     "two-model-table",
+    "grouped-table",
+    "ambiguous-grouped-table",
     "vector-figure",
     "image-figure",
     "uncaptioned-image",
@@ -45,7 +47,32 @@ def corpus_pdf(case):
     def rect(x, y, w, h):
         ops.append(f"q .92 g {x} {y} {w} {h} re f Q")
 
-    if case in {"definition-table", "model-table", "two-model-table"}:
+    if case in {"grouped-table", "ambiguous-grouped-table"}:
+        rect(50, 650, 510, 50)
+        for y in [570, 490]:
+            rect(50, y, 510, 40)
+        rect(50, 450, 510, 1)
+        text("TABLE 1 Grouped measures.", 50, 720)
+        text("Location", 55, 653)
+        for n, x, label in [(1, 220, "Firm-weighted"), (2, 400, "Employment-weighted")]:
+            text(f"({n})", x, 685)
+            text(label, x, 670)
+            text("Share", x, 653)
+            text("Rank", x + 60, 653)
+        for row, y in enumerate([625, 585, 545, 505, 465], 1):
+            text(f"City {row}", 55, y)
+            text(
+                "12345678901234567890"
+                if case == "ambiguous-grouped-table" and row == 1
+                else f"{row}.4",
+                220,
+                y,
+            )
+            if row != 2:
+                text(str(row + 10), 280, y)
+            text(f"{row}.8", 400, y)
+            text(str(row + 20), 460, y)
+    elif case in {"definition-table", "model-table", "two-model-table"}:
         rect(50, 650, 510, 50)
         for y in [570, 490]:
             rect(50, y, 510, 40)
