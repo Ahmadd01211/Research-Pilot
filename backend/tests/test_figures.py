@@ -81,6 +81,26 @@ def test_vector_or_ambiguous_graph_uses_full_page_and_does_not_invent_values():
     assert all("99%" not in c["text"] for c in chunks)
 
 
+def test_caption_above_embedded_figure_gets_a_focused_crop():
+    class CaptionAbove(FigurePage):
+        images = [{"x0": 10, "top": 50, "x1": 90, "bottom": 80}]
+
+        def extract_words(self, **kwargs):
+            return [
+                {"text": "FIGURE", "x0": 10, "x1": 26, "top": 40, "bottom": 44},
+                {"text": "1", "x0": 28, "x1": 32, "top": 40, "bottom": 44},
+                {"text": "Survey results.", "x0": 35, "x1": 80, "top": 40, "bottom": 44},
+            ]
+
+    class PDF:
+        pages = [CaptionAbove()]
+
+    figures = prepare_layouts(PDF())[0]["figures"]
+    assert len(figures) == 1
+    assert figures[0]["box"] == [0.1, 0.5, 0.9, 0.8]
+    assert figures[0]["detection"] == "embedded_image"
+
+
 def test_uncaptioned_image_has_neutral_label_and_no_semantic_chunk():
     class Image(FigurePage):
         def extract_words(self, **kwargs):

@@ -51,3 +51,5 @@ The supplied paper physical page 14 now yields 38 table rows and five columns. T
 
 Verification: 102 backend tests, 56 frontend tests and 23 real-PDF synthetic layouts pass. Ruff, strict mypy, frontend lint/type checking and production build pass. Supplied-paper page-14 labelled row values and prior table dimensions verified locally; deployed reader and link/quality smoke checks pass. No embeddings or provider requests introduced.
 
+
+Figure preview association fix: figure captions above or below a nearby embedded image can now receive a focused crop, provided the nearest image match is unambiguous. Ambiguous/vector-only figures retain the full-page fallback. Existing documents need reader update once.

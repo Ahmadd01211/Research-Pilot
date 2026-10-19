@@ -90,22 +90,25 @@ def figures_on_page(
             break
     used = set()
     for caption in captions:
-        y = min(words[i]["box"][1] for i in caption["caption_word_indices"])
+        caption_top = min(words[i]["box"][1] for i in caption["caption_word_indices"])
+        caption_bottom = max(words[i]["box"][3] for i in caption["caption_word_indices"])
         candidates = sorted(
             (
-                (abs(y - box[3]), j, box)
+                (
+                    max(box[1] - caption_bottom, caption_top - box[3], 0),
+                    j,
+                    box,
+                )
                 for j, box in enumerate(images)
-                if j not in used and box[3] <= y + 0.01
+                if j not in used
             ),
             key=lambda item: item[0],
         )
-        # Unique nearby image or the only image/caption on a page; otherwise retain full-page fallback.
+        # Captions may be above or below vector/raster figures. Require a unique
+        # nearby image; ambiguous layouts retain the source-page fallback.
         if candidates and (
-            (len(captions) == len(images) == 1 and candidates[0][0] < 0.18)
-            or (
-                candidates[0][0] < 0.12
-                and (len(candidates) == 1 or candidates[1][0] - candidates[0][0] > 0.03)
-            )
+            candidates[0][0] < 0.12
+            and (len(candidates) == 1 or candidates[1][0] - candidates[0][0] > 0.03)
         ):
             _, j, box = candidates[0]
             caption["box"] = box
