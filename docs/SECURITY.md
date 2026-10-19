@@ -38,3 +38,8 @@ Retry and evidence endpoints preserve owner/project checks and CSRF on mutations
 PDF.js is pinned/self-hosted and receives only authenticated checksum-verified original bytes. Rendered canvas and plain React text expose no scripting/forms/action layer. XFA/WASM are disabled; the older explicit no-eval compatibility flag is retained, while strict CSP remains authoritative (installed PDF.js 6 no longer types that flag). No unsafe-eval, CDN or iframe permission was added. Only inert decoder fallbacks/fonts/CMaps are copied; the optional QuickJS evaluator is not served. Worker .mjs MIME is explicitly JavaScript with inherited security headers. Browser canvas/image bounds reduce resource pressure but are not a complete malicious-code sandbox. Keep renderer/parser dependencies maintained and retain original download/error alternatives.
 
 Reader preparation uses existing ownership/CSRF/project locks and is allowed only for legacy extracted pages without layouts. Raw text and recurring margin words remain available; cleanup is heuristic and never a guarantee of semantic or scientific accuracy. Source/version/anchor mismatches disable highlights. Google-hosted embedding direction is recorded but no provider key/call is configured; no source text has left the machine through an AI provider in this milestone. Production data-use terms and previous release hardening remain relevant.
+
+
+## Figure evidence milestone
+
+Figure previews use owned, checksum-verified originals locally. No external image URL or vision API is used. Uncertain figure-page prose is withheld from retrieval preparation. Caption detection is heuristic, not an accuracy guarantee.

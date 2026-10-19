@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
@@ -12,7 +13,14 @@ from app.core.dependencies import current_user, database, settings_for
 from app.modules.documents import processing, service
 from app.modules.documents.models import DocumentPageText
 from app.modules.documents.reader import READER_VERSION
-from app.modules.documents.schemas import DocumentPage, DocumentRead, EvidencePage, UploadResult
+from app.modules.documents.schemas import (
+    DocumentPage,
+    DocumentRead,
+    EvidencePage,
+    FigureList,
+    FigureRead,
+    UploadResult,
+)
 from app.modules.documents.storage import LocalStorage
 from app.modules.identity.models import User
 from app.modules.projects.service import owned
@@ -191,3 +199,39 @@ def prepare_reader(
     db.commit()
     db.refresh(paper)
     return DocumentRead.model_validate(paper)
+
+
+@router.get("/{document_id}/figures", response_model=FigureList)
+def figure_evidence(
+    project_id: UUID,
+    document_id: UUID,
+    user: User = Depends(current_user),
+    db: Session = Depends(database),
+) -> FigureList:
+    paper = service.owned(db, user.id, project_id, document_id)
+    if paper.status != "extracted":
+        raise HTTPException(409, "Text extraction has not completed")
+    rows = db.execute(
+        select(
+            DocumentPageText.page_number,
+            DocumentPageText.layout["version"],
+            DocumentPageText.layout["figures"],
+        )
+        .where(DocumentPageText.document_id == document_id)
+        .order_by(DocumentPageText.page_number)
+    )
+    items = []
+    for number, version, figures in rows:
+        for figure in figures or []:
+            items.append(
+                FigureRead.model_validate(
+                    {
+                        **figure,
+                        "document_id": document_id,
+                        "page_number": number,
+                        "reader_version": version,
+                        "source_sha256": paper.sha256,
+                    }
+                )
+            )
+    return FigureList(items=items)

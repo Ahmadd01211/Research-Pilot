@@ -4,11 +4,12 @@ import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 GlobalWorkerOptions.workerSrc = workerUrl;
 type Box = readonly [number, number, number, number];
 
-export default function PdfCanvas({ url, sourceHash, page, boxes }: { url: string; sourceHash?: string; page: number; boxes: readonly Box[] }) {
+export default function PdfCanvas({ url, sourceHash, page, boxes, crop, compact=false }: { url: string; sourceHash?: string; page: number; boxes: readonly Box[]; crop?: Box; compact?: boolean }) {
+  const cropKey=crop?.join(':')??'full';
   const canvas = useRef<HTMLCanvasElement>(null);
   const [loaded, setLoaded] = useState<{ url: string; hash?: string; pdf?: PDFDocumentProxy; error?: string }>();
   const [zoom, setZoom] = useState(1);
-  const [rendered, setRendered] = useState<{ pdf: PDFDocumentProxy; page: number; zoom: number; boxes: readonly Box[]; error?: string }>();
+  const [rendered, setRendered] = useState<{ pdf: PDFDocumentProxy; page: number; zoom: number; boxes: readonly Box[]; cropKey:string; error?: string }>();
   useEffect(() => {
     if (!sourceHash) return;
     let active = true;
@@ -46,7 +47,7 @@ export default function PdfCanvas({ url, sourceHash, page, boxes }: { url: strin
         if (!active) return;
         const natural = source.getViewport({ scale: 1 });
         if (!Number.isFinite(natural.width) || !Number.isFinite(natural.height) || natural.width <= 0 || natural.height <= 0) throw new Error('Invalid page');
-        const scale = Math.min(1.5 * zoom, Math.sqrt(12_000_000 / (natural.width * natural.height)), 8000 / Math.max(natural.width, natural.height));
+        const scale = Math.min(1.5 * zoom, Math.sqrt((compact?3_000_000:12_000_000) / (natural.width * natural.height)), 8000 / Math.max(natural.width, natural.height));
         const viewport = source.getViewport({ scale });
         target.width = Math.ceil(viewport.width); target.height = Math.ceil(viewport.height);
         const context = target.getContext('2d');
@@ -60,14 +61,25 @@ export default function PdfCanvas({ url, sourceHash, page, boxes }: { url: strin
           context.fillRect(x0 * viewport.width, y0 * viewport.height, (x1-x0) * viewport.width, (y1-y0) * viewport.height);
           context.strokeRect(x0 * viewport.width, y0 * viewport.height, (x1-x0) * viewport.width, (y1-y0) * viewport.height);
         }
-        setRendered({ pdf, page, zoom, boxes });
-      } catch { if (active) setRendered({ pdf, page, zoom, boxes, error: 'This page could not be rendered. The original download and extracted text remain available.' }); }
+        if(crop) {
+          const [x0,y0,x1,y1]=crop;
+          const image=document.createElement('canvas');
+          image.width=Math.max(1,Math.ceil((x1-x0)*viewport.width));
+          image.height=Math.max(1,Math.ceil((y1-y0)*viewport.height));
+          const imageContext=image.getContext('2d');
+          if(!imageContext)throw new Error('Crop unavailable');
+          imageContext.drawImage(target,x0*viewport.width,y0*viewport.height,(x1-x0)*viewport.width,(y1-y0)*viewport.height,0,0,image.width,image.height);
+          target.width=image.width;target.height=image.height;
+          context.drawImage(image,0,0);
+        }
+        setRendered({ pdf, page, zoom, boxes, cropKey });
+      } catch { if (active) setRendered({ pdf, page, zoom, boxes, cropKey, error: 'This page could not be rendered. The original download and extracted text remain available.' }); }
     })();
     return () => { active = false; task?.cancel(); };
-  }, [pdf, page, zoom, boxes]);
-  const current = rendered?.pdf === pdf && rendered?.page === page && rendered?.zoom === zoom && rendered?.boxes === boxes ? rendered : undefined;
+  }, [pdf, page, zoom, boxes, crop, cropKey, compact]);
+  const current = rendered?.pdf === pdf && rendered?.page === page && rendered?.zoom === zoom && rendered?.boxes === boxes && rendered.cropKey === cropKey ? rendered : undefined;
   const error = loaded?.url === url && loaded.hash === sourceHash ? loaded.error ?? current?.error : undefined;
-  return <section className="reader-original" aria-label="Original PDF viewer"><div className="between reader-panel-heading"><h2>Original PDF</h2><div className="row gap8"><button className="btn" disabled={zoom <= .75} onClick={() => setZoom(z => Math.max(.75,z-.25))} aria-label="Zoom out">−</button><span>{Math.round(zoom*100)}%</span><button className="btn" disabled={zoom >= 2} onClick={() => setZoom(z => Math.min(2,z+.25))} aria-label="Zoom in">+</button></div></div>{error ? <p role="alert" className="alert mt16">{error}</p> : !current && <p role="status" className="muted tiny mt16">Rendering original page…</p>}<div className={`pdf-scroll zoom-${Math.round(zoom*100)}`} aria-busy={!current && !error}><canvas ref={canvas} className={!current ? 'pdf-pending' : undefined} role="img" aria-label={`Original PDF page ${page}${boxes.length ? ', selected passage highlighted' : ''}`}>Use the extracted-text panel or download the original to read this page.</canvas></div></section>;
+  return <section className="reader-original" aria-label="Original PDF viewer"><div className="between reader-panel-heading"><h2>{compact?crop?'Figure preview':'Source page preview':'Original PDF'}</h2><div className="row gap8"><button className="btn" disabled={zoom <= .75} onClick={() => setZoom(z => Math.max(.75,z-.25))} aria-label="Zoom out">−</button><span>{Math.round(zoom*100)}%</span><button className="btn" disabled={zoom >= 2} onClick={() => setZoom(z => Math.min(2,z+.25))} aria-label="Zoom in">+</button></div></div>{error ? <p role="alert" className="alert mt16">{error}</p> : !current && <p role="status" className="muted tiny mt16">Rendering original page…</p>}<div className={`pdf-scroll zoom-${Math.round(zoom*100)}`} aria-busy={!current && !error}><canvas ref={canvas} className={!current ? 'pdf-pending' : undefined} role="img" aria-label={`Original PDF page ${page}${boxes.length ? ', selected passage highlighted' : ''}`}>Use the extracted-text panel or download the original to read this page.</canvas></div></section>;
 }
 
 

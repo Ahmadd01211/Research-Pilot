@@ -247,6 +247,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/documents/{document_id}/figures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Figure Evidence */
+        get: operations["figure_evidence_api_v1_projects__project_id__documents__document_id__figures_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/documents/{document_id}/pages/{page_number}": {
         parameters: {
             query?: never;
@@ -407,6 +424,56 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** FigureDiscussion */
+        FigureDiscussion: {
+            /** Page Number */
+            page_number: number;
+            /** Passage Id */
+            passage_id: string;
+            /** Text */
+            text: string;
+        };
+        /** FigureList */
+        FigureList: {
+            /** Items */
+            items: components["schemas"]["FigureRead"][];
+        };
+        /** FigureRead */
+        FigureRead: {
+            /** Box */
+            box: [
+                number,
+                number,
+                number,
+                number
+            ] | null;
+            /** Caption */
+            caption: string | null;
+            /** Caption Word Indices */
+            caption_word_indices: number[];
+            /**
+             * Detection
+             * @enum {string}
+             */
+            detection: "embedded_image" | "source_page";
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Page Number */
+            page_number: number;
+            /** Reader Version */
+            reader_version: string;
+            /** Related Passages */
+            related_passages: components["schemas"]["FigureDiscussion"][];
+            /** Source Sha256 */
+            source_sha256: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -537,6 +604,8 @@ export interface components {
         ReaderLayout: {
             /** Excluded Margin Text */
             excluded_margin_text: string[];
+            /** Figures */
+            figures?: components["schemas"]["SourceFigure"][];
             /** Height */
             height: number;
             /** Passages */
@@ -566,6 +635,31 @@ export interface components {
              * Format: password
              */
             password: string;
+        };
+        /** SourceFigure */
+        SourceFigure: {
+            /** Box */
+            box: [
+                number,
+                number,
+                number,
+                number
+            ] | null;
+            /** Caption */
+            caption: string | null;
+            /** Caption Word Indices */
+            caption_word_indices: number[];
+            /**
+             * Detection
+             * @enum {string}
+             */
+            detection: "embedded_image" | "source_page";
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Related Passages */
+            related_passages: components["schemas"]["FigureDiscussion"][];
         };
         /** SourceTable */
         SourceTable: {
@@ -1192,6 +1286,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    figure_evidence_api_v1_projects__project_id__documents__document_id__figures_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureList"];
+                };
             };
             /** @description Validation Error */
             422: {

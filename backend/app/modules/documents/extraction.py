@@ -65,6 +65,13 @@ def extract_with_layout(
                 a, b, c, d = word.box
                 if not 0 <= a < c <= 1 or not 0 <= b < d <= 1:
                     return None, None, "invalid_pdf"
+            for figure in layout.figures:
+                if figure.box:
+                    a, b, c, d = figure.box
+                    if not 0 <= a < c <= 1 or not 0 <= b < d <= 1:
+                        return None, None, "invalid_pdf"
+                if any(not 0 <= i < len(layout.words) for i in figure.caption_word_indices):
+                    return None, None, "invalid_pdf"
             for passage in layout.passages + [
                 cell for table in layout.tables for row in table.rows for cell in row
             ]:

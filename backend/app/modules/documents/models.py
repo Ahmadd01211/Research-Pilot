@@ -74,3 +74,22 @@ class ProcessingHeartbeat(Base):
     __tablename__ = "processing_heartbeat"
     id: Mapped[int] = mapped_column(primary_key=True)
     ticked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class EvidenceChunk(Base):
+    __tablename__ = "evidence_chunks"
+    __table_args__ = (
+        CheckConstraint("kind IN ('prose','table_row','figure_caption')", name="valid_kind"),
+        CheckConstraint("page_number >= 1 AND page_number <= 300", name="bounded_page"),
+        Index("ix_chunk_document_reader", "document_id", "reader_version", "page_number"),
+    )
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    document_id: Mapped[UUID] = mapped_column(ForeignKey("documents.id", ondelete="RESTRICT"))
+    source_sha256: Mapped[str] = mapped_column(String(64))
+    reader_version: Mapped[str] = mapped_column(String(160))
+    chunker_version: Mapped[str] = mapped_column(String(40))
+    page_number: Mapped[int] = mapped_column()
+    kind: Mapped[str] = mapped_column(String(24))
+    source_id: Mapped[str] = mapped_column(String(64))
+    text: Mapped[str] = mapped_column(Text)
+    source_metadata: Mapped[dict[str, object]] = mapped_column(JSONB)

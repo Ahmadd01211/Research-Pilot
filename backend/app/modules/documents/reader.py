@@ -9,9 +9,10 @@ from typing import Any
 from pdfminer import __version__ as miner_version
 from pdfplumber import __version__ as plumber_version
 
+from app.modules.documents.figures import figures_on_page, finalize_figures
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v4:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v5:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
@@ -52,6 +53,8 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
         total_words += len(words)
         if len(words) > 12000 or total_words > 200000:
             raise MemoryError
+        tables = striped_tables(view, words)
+        figures = figures_on_page(view, words, tables)
         layouts.append(
             {
                 "version": READER_VERSION,
@@ -60,7 +63,8 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                 "rotation": page.rotation or 0,
                 "words": words,
                 "passages": [],
-                "tables": striped_tables(view, words),
+                "tables": tables,
+                "figures": figures,
                 "excluded_margin_text": [],
             }
         )
@@ -98,10 +102,18 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
             for cell in row
             for i in cell["word_indices"]
         }
+        figure_words = {i for figure in layout["figures"] for i in figure["caption_word_indices"]}
+        for i, word in enumerate(layout["words"]):
+            cx, cy = (word["box"][0] + word["box"][2]) / 2, (word["box"][1] + word["box"][3]) / 2
+            if any(
+                f["box"] and f["box"][0] <= cx <= f["box"][2] and f["box"][1] <= cy <= f["box"][3]
+                for f in layout["figures"]
+            ):
+                figure_words.add(i)
         current: list[int] = []
         length = 0
         for i, word in enumerate(layout["words"]):
-            if word["margin"] or i in table_words:
+            if word["margin"] or i in table_words or i in figure_words:
                 continue
             if current and (
                 word["box"][1] < layout["words"][current[-1]]["box"][1] - 0.025
@@ -146,4 +158,5 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
             passage["id"] = hashlib.sha256(
                 json.dumps(content, ensure_ascii=True, separators=(",", ":")).encode()
             ).hexdigest()
+    finalize_figures(layouts, READER_VERSION)
     return layouts

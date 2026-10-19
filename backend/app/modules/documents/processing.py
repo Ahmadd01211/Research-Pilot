@@ -6,10 +6,12 @@ from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 from sqlalchemy import delete, or_, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.modules.documents.chunks import make_chunks
 from app.modules.documents.extraction import EXTRACTOR_VERSION, TRANSIENT, extract_with_layout
-from app.modules.documents.models import Document, DocumentJob, DocumentPageText
+from app.modules.documents.models import Document, DocumentJob, DocumentPageText, EvidenceChunk
 from app.modules.documents.storage import LocalStorage
 from app.modules.identity import models as identity_models  # noqa: F401
 from app.modules.projects import service as projects
@@ -144,6 +146,14 @@ def finish(
                     for n, text in enumerate(pages, 1)
                 ]
             )
+            if layouts:
+                # Preserve prior derived versions; identical retries add nothing.
+                for chunk in make_chunks(document_id, document.sha256, layouts):
+                    db.execute(
+                        insert(EvidenceChunk)
+                        .values(**chunk)
+                        .on_conflict_do_nothing(index_elements=[EvidenceChunk.id])
+                    )
             job.page_count = len(pages)
             job.extractor_version = EXTRACTOR_VERSION
             job.completed_at = datetime.now(UTC)

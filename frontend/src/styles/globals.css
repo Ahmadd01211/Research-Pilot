@@ -50,3 +50,9 @@
 
 .source-table .library-table td, .source-table .library-table th { white-space:normal; min-width:160px; overflow-wrap:anywhere; vertical-align:top; }
 .source-table caption { text-align:left; font-weight:600; padding:12px 0; }
+
+.figure-card { background:#f8fafc; }
+.figure-card h3 { font-size:1rem; margin-top:8px; }
+.figure-card .reader-original { margin-top:16px; }
+.figure-reference { margin:16px 0; padding:12px 16px; border-left:3px solid #3457d5; font-size:.875rem; }
+.figure-reference a { display:inline-block; margin-top:8px; }

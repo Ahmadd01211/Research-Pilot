@@ -35,3 +35,8 @@ The storage-only boundary above is superseded by durable extraction. Upload → 
 ## Original source reader
 
 Bounded ingestion now emits raw pypdf text and a separately validated pdfplumber word/passages layout, committed together. JSONB page layouts include normalized CropBox anchors and deterministic reader-versioned passage IDs. A nullable additive migration preserves existing extractions; reader preparation is an explicit owned background upgrade. The frontend lazy-loads local PDF.js, verifies original bytes, renders a canvas with measured highlights and offers readable/raw text. No iframe, public file URL, CDN or browser provider key is used. CSP remains strict. Future Google-hosted embeddings/retrieval and independent chat generation are planned in ADR 0007, not implemented yet.
+
+
+## Figure evidence milestone
+
+Reader v5 identifies conservative figure evidence; source-type-v1 chunks publish transactionally with page layouts. No embeddings or image inference is performed. See ADR 0008 and learning/05-figure-evidence.md.

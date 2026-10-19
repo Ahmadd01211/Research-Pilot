@@ -19,3 +19,8 @@ Continue the research feature phases now. Revisit these items earlier if a depen
 - Removal lifecycle: design Trash/restore, a clearly communicated retention window, confirmed permanent deletion, and an idempotent purge job covering originals, versions, extracted evidence, embeddings and database rows. Coordinate processing cancellation and retries; document backup expiration separately. The proposed 30-day window is a recommendation, not an adopted retention policy. Current soft removal retains data and hides access; no recovery/purge UI exists yet.
 
 While implementing ingestion, preserve the ability to cancel processing and clean up derived artifacts later. Deferral does not authorize automatic purging of current user data.
+
+
+## Figure evidence milestone
+
+Completed figure source cards and typed chunk preparation. Next: Google embedding configuration, version-aware indexing and owned source-scoped retrieval; then cited Research Chat with figure cards and abstention. Complete historical source navigation, conflict reconciliation and Trash/purge remain pending.

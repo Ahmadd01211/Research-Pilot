@@ -62,3 +62,8 @@ POST `.../documents/{id}/prepare-reader`: owned live non-archived project, Origi
 Frontend evidence links identify page, passage ID, original source checksum and reader version. These are source anchors for future RAG citations; the reader itself does not generate or verify scientific claims.
 
 Evidence layouts now include tables (box, detection method, rows of anchored cells) and reader_current. prepare-reader also accepts an extracted document with an older reader version, while rejecting already-current/pending work. Cell indices are validated like prose passages. No database migration is needed for the additive JSON layout fields.
+
+
+## Figure evidence milestone
+
+Owned GET /api/v1/projects/{project_id}/documents/{document_id}/figures returns source captions, crop/page fallback, source identity and explicit author-discussion anchors; foreign/removed resources are hidden. Figures require completed extraction.

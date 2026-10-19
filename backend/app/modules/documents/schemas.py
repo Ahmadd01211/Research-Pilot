@@ -33,6 +33,33 @@ class SourceTable(BaseModel):
     detection: str
 
 
+class FigureDiscussion(BaseModel):
+    page_number: int
+    passage_id: str
+    text: str
+
+
+class SourceFigure(BaseModel):
+    id: str
+    label: str
+    caption: str | None
+    caption_word_indices: list[int]
+    box: tuple[float, float, float, float] | None
+    detection: Literal["embedded_image", "source_page"]
+    related_passages: list[FigureDiscussion]
+
+
+class FigureRead(SourceFigure):
+    document_id: UUID
+    page_number: int
+    reader_version: str
+    source_sha256: str
+
+
+class FigureList(BaseModel):
+    items: list[FigureRead]
+
+
 class ReaderLayout(BaseModel):
     version: str
     width: float
@@ -40,6 +67,7 @@ class ReaderLayout(BaseModel):
     rotation: int
     words: list[WordAnchor]
     passages: list[ReadablePassage]
+    figures: list[SourceFigure] = Field(default_factory=list)
     tables: list[SourceTable] = Field(default_factory=list)
     excluded_margin_text: list[str]
 

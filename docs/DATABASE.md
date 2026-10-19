@@ -80,3 +80,8 @@ The disposable test suite verifies model/migration parity, simultaneous creation
 ## Migration 0005 — source layout
 
 Nullable document_pages.layout JSONB stores reader identity, rotated CropBox size, measured normalized words, margin flags, readable passages with deterministic IDs and word-index references, and excluded recurring margin text. Existing raw page text is retained. New parsing jobs publish both representations atomically. Existing layout-null extractions may request a bounded reader upgrade; migration itself does not requeue/rewrite them. General versioned reprocessing must retain cited derived versions once RAG citations exist.
+
+
+## Figure evidence milestone
+
+Migration 0006 adds evidence_chunks with source checksum, reader/chunker version, physical page, source anchor, kind (prose/table_row/figure_caption), text and metadata. Deterministic IDs provide idempotency. Prior versions are retained; this is not a complete historical-reader UI.

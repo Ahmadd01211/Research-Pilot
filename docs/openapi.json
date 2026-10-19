@@ -210,6 +210,149 @@
         "title": "EvidencePage",
         "type": "object"
       },
+      "FigureDiscussion": {
+        "properties": {
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "passage_id": {
+            "title": "Passage Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "page_number",
+          "passage_id",
+          "text"
+        ],
+        "title": "FigureDiscussion",
+        "type": "object"
+      },
+      "FigureList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FigureRead"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "FigureList",
+        "type": "object"
+      },
+      "FigureRead": {
+        "properties": {
+          "box": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "minItems": 4,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Box"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
+          },
+          "caption_word_indices": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Caption Word Indices",
+            "type": "array"
+          },
+          "detection": {
+            "enum": [
+              "embedded_image",
+              "source_page"
+            ],
+            "title": "Detection",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "reader_version": {
+            "title": "Reader Version",
+            "type": "string"
+          },
+          "related_passages": {
+            "items": {
+              "$ref": "#/components/schemas/FigureDiscussion"
+            },
+            "title": "Related Passages",
+            "type": "array"
+          },
+          "source_sha256": {
+            "title": "Source Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "caption",
+          "caption_word_indices",
+          "box",
+          "detection",
+          "related_passages",
+          "document_id",
+          "page_number",
+          "reader_version",
+          "source_sha256"
+        ],
+        "title": "FigureRead",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -622,6 +765,13 @@
             "title": "Excluded Margin Text",
             "type": "array"
           },
+          "figures": {
+            "items": {
+              "$ref": "#/components/schemas/SourceFigure"
+            },
+            "title": "Figures",
+            "type": "array"
+          },
           "height": {
             "title": "Height",
             "type": "number"
@@ -701,6 +851,89 @@
           "display_name"
         ],
         "title": "RegisterInput",
+        "type": "object"
+      },
+      "SourceFigure": {
+        "properties": {
+          "box": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "minItems": 4,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Box"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
+          },
+          "caption_word_indices": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Caption Word Indices",
+            "type": "array"
+          },
+          "detection": {
+            "enum": [
+              "embedded_image",
+              "source_page"
+            ],
+            "title": "Detection",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "related_passages": {
+            "items": {
+              "$ref": "#/components/schemas/FigureDiscussion"
+            },
+            "title": "Related Passages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "caption",
+          "caption_word_indices",
+          "box",
+          "detection",
+          "related_passages"
+        ],
+        "title": "SourceFigure",
         "type": "object"
       },
       "SourceTable": {
@@ -1717,6 +1950,59 @@
           }
         },
         "summary": "Download",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/documents/{document_id}/figures": {
+      "get": {
+        "operationId": "figure_evidence_api_v1_projects__project_id__documents__document_id__figures_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Figure Evidence",
         "tags": [
           "documents"
         ]
