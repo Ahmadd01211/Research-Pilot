@@ -140,3 +140,7 @@ Reader v11 adds caption-validated, shaded-header unnumbered numeric tables with 
 
 Verification for unnumbered sectioned numeric tables: all 71 backend tests and 48 frontend tests pass; Ruff and strict mypy pass (40 source files), frontend lint/types and production build pass. Final 41-page source parse confirms exact 8.4/5.3/3.1 values and earlier page 8/18/20/33 table structures. Seventeen-case quality report refreshed.
 
+
+## Partial-shading summary table — 19 October 2026
+Reader v12 collects partial-width row shading inside a full-width header/closing-rule boundary, while retaining gutter validation. The supplied paper physical page 7 now yields six columns and seven rows, preserving all five numbered sample headings and six data rows; Employment (unweighted) remains distinct from Employment (weighted), as do age and observations. Paragraph-to-caption boundaries are explicit for uppercase TABLE plus an identifier, and Notes/Note starts; skipping measured table/figure regions flushes prior prose so captions do not join subsequent notes. Raw bytes/text remain unchanged. Existing uploads require an explicit reader update. Eighteen synthetic layouts now include a partial-shading summary table with wrapped row labels, separate prose/title/notes and labelled row chunks. All 72 isolated backend tests, Ruff and strict mypy pass; prior source tables on pages 8/18/20/33/34 remain detected. Frontend source unchanged in this slice.
+

@@ -146,11 +146,20 @@
     },
     {
       "status": "passed",
+      "case": "summary-table",
+      "words": 80,
+      "tables": 1,
+      "figures": 0,
+      "chunks": 10,
+      "limitations": []
+    },
+    {
+      "status": "passed",
       "case": "sectioned-numeric",
       "words": 57,
       "tables": 1,
       "figures": 0,
-      "chunks": 10,
+      "chunks": 11,
       "limitations": []
     },
     {
@@ -159,7 +168,7 @@
       "words": 57,
       "tables": 1,
       "figures": 0,
-      "chunks": 3,
+      "chunks": 4,
       "limitations": [
         "uncertain numeric alignment; table withheld from retrieval"
       ]

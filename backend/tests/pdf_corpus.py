@@ -21,6 +21,7 @@ CASES = [
     "image-figure",
     "uncaptioned-image",
     "equation-baselines",
+    "summary-table",
     "sectioned-numeric",
     "ambiguous-sectioned-numeric",
 ]
@@ -49,7 +50,25 @@ def corpus_pdf(case):
     def rect(x, y, w, h):
         ops.append(f"q .92 g {x} {y} {w} {h} re f Q")
 
-    if case in {"sectioned-numeric", "ambiguous-sectioned-numeric"}:
+    if case == "summary-table":
+        text("The preceding paragraph must remain separate from the table.", 50, 635)
+        text("TABLE 1 Summary by sample.", 50, 615)
+        rect(50, 550, 510, 50)
+        for y in [470, 410, 350]:
+            rect(50, y, 360, 30)
+        rect(50, 349, 510, 1)
+        for n, x in enumerate([210, 280, 350, 420, 490], 1):
+            text(f"({n})", x, 585)
+            text("Sample", x, 570)
+            text(f"Group{n}", x, 557)
+        for n, y in enumerate([525, 485, 455, 425, 395, 365], 1):
+            text("Employment" if n == 1 else f"Measure {n}", 55, y)
+            if n == 1:
+                text("(unweighted)", 55, y - 13)
+            for col, x in enumerate([210, 280, 350, 420, 490], 1):
+                text(f"{n}.{col}", x, y)
+        text("Notes: These source notes are outside the numeric table.", 50, 330)
+    elif case in {"sectioned-numeric", "ambiguous-sectioned-numeric"}:
         text("TABLE 1 Unnumbered comparison.", 50, 720)
         rect(50, 650, 510, 50)
         text("Full sample", 55, 655)

@@ -13,7 +13,7 @@ from app.modules.documents.figures import figures_on_page, finalize_figures
 from app.modules.documents.labelled_tables import labelled_tables
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v11:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v12:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def flow_bounds(word: dict[str, Any], rotation: int) -> tuple[float, float]:
@@ -180,7 +180,7 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
         length = 0
         for i, word in enumerate(layout["words"]):
             if word["margin"] or i in table_words or i in figure_words or i in equation_words:
-                if i in equation_words and current:
+                if (i in equation_words or i in table_words or i in figure_words) and current:
                     layout["passages"].append(
                         {
                             "text": " ".join(layout["words"][j]["text"] for j in current),
@@ -196,7 +196,17 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                 if current
                 else (word_top, word_top)
             )
-            if current and (word_top < previous_top - 0.025 or word_top > previous_bottom + 0.045):
+            caption_start = (
+                word["text"] == "TABLE"
+                and i + 1 < len(layout["words"])
+                and bool(re.fullmatch(r"[A-Za-z]?\d+[a-z]?", layout["words"][i + 1]["text"]))
+            )
+            if current and (
+                caption_start
+                or word["text"] in {"Notes:", "Note:"}
+                or word_top < previous_top - 0.025
+                or word_top > previous_bottom + 0.045
+            ):
                 layout["passages"].append(
                     {
                         "text": " ".join(layout["words"][j]["text"] for j in current),

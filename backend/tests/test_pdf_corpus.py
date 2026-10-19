@@ -40,11 +40,13 @@ def check_case(case):
     if case.endswith("table"):
         assert len(layout["tables"]) == 1
         rows = layout["tables"][0]["rows"]
-        assert len(rows) == 6
+        assert len(rows) == (7 if case == "summary-table" else 6)
         assert all(
             len(row)
             == (
-                5
+                6
+                if case == "summary-table"
+                else 5
                 if case == "grouped-table"
                 else 3
                 if case == "ambiguous-grouped-table"
@@ -63,6 +65,22 @@ def check_case(case):
                 "(2) Revenue: [blank in source]"
                 in [c for c in chunks if c["kind"] == "table_row"][1]["text"]
             )
+    if case == "summary-table":
+        assert [c["text"] for c in rows[1]] == [
+            "Employment (unweighted)",
+            "1.1",
+            "1.2",
+            "1.3",
+            "1.4",
+            "1.5",
+        ]
+        assert [c["text"] for c in rows[0][1:]] == [f"({n}) Sample Group{n}" for n in range(1, 6)]
+        assert any("(5) Sample Group5: 1.5" in c["text"] for c in chunks)
+        assert not any(
+            "preceding paragraph" in p["text"] and "TABLE" in p["text"] for p in layout["passages"]
+        )
+        assert not any("TABLE" in p["text"] and "Notes:" in p["text"] for p in layout["passages"])
+        assert any(p["text"].startswith("Notes:") for p in layout["passages"])
     if case in {"sectioned-numeric", "ambiguous-sectioned-numeric"}:
         assert len(layout["tables"]) == 1
         rows = layout["tables"][0]["rows"]

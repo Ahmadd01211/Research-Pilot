@@ -92,7 +92,7 @@ def striped_tables(view: Any, words: list[dict[str, Any]]) -> list[dict[str, Any
             rect
             for rect in rectangles
             if rect["x0"] >= left_edge - 1
-            and abs(rect["x1"] - right_edge) < 1
+            and rect["x1"] <= right_edge + 1
             and rect["x1"] - rect["x0"] > width * 0.55
             and 5 < rect["bottom"] - rect["top"] < height * 0.15
         ]
