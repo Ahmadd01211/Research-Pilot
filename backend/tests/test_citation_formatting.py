@@ -1,6 +1,6 @@
 """Bibliography previews use only stored fields, flag gaps, and stay owner-scoped and read-only."""
 
-from app.modules.references.formatting import Source, format_source, parse_name
+from app.modules.references.formatting import Source, _author_list_key, format_source, parse_name
 from tests.conftest import csrf, login, register
 from tests.test_projects import authenticated, create
 
@@ -120,3 +120,27 @@ def test_bibliography_endpoint_orders_excludes_removed_and_is_read_only(client):
     register(client, "bibliography-other@example.com")
     login(client, "bibliography-other@example.com")
     assert client.get(base + "/bibliography").status_code == 404
+
+
+def test_apa_same_author_year_grouping_uses_complete_ordered_author_lists(client):
+    def key(*authors: str) -> str:
+        return _author_list_key(Source("journal", "T", list(authors), 2024))
+
+    assert key("Smith, John") != key("Smith, Jane")
+    assert key("Smith,  John", "Lee, Kim") == key("smith, john", "Lee, Kim")
+    assert key("Smith, John", "Lee, Kim") != key("Lee, Kim", "Smith, John")
+
+    authenticated(client)
+    project = create(client)
+    base = f"/api/v1/projects/{project['id']}/references"
+    for title, authors in [("One", ["Smith, John"]), ("Two", ["Smith, Jane"]),
+                           ("Three", ["Lee, Kim", "Ng, Al"]), ("Four", ["Lee, Kim", "Ng, Al"]),
+                           ("Five", ["Ng, Al", "Lee, Kim"])]:
+        assert client.post(base, headers=csrf(client), json={
+            "kind": "journal", "title": title, "authors": authors, "year": 2024,
+            "container_title": "J", "doi": None, "url": "", "document_id": None,
+        }).status_code == 201
+    flagged = {item["text"].split(" (2024). ")[1].split(".")[0]
+               for item in client.get(base + "/bibliography").json()["items"]
+               if any("letter suffixes" in w for w in item["warnings"])}
+    assert flagged == {"Three", "Four"}

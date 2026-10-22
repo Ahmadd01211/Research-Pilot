@@ -289,9 +289,10 @@ def _sort_key(source: Source, identifier: UUID) -> tuple[str, int, str, str]:
     return author_key, year, _sort_text(source.title), str(identifier)
 
 
-def _first_author_key(source: Source) -> str:
+def _author_list_key(source: Source) -> str:
     names = [parse_name(raw)[0] for raw in source.authors]
-    return "|".join(_sort_text(name.family or name.raw) for name in names)
+    return "|".join(f"{_sort_text(name.family)},{_sort_text(name.given)}" if name.personal
+                    else _sort_text(name.raw) for name in names)
 
 
 def bibliography(db: Session, owner: UUID, project_id: UUID) -> Bibliography:
@@ -306,12 +307,12 @@ def bibliography(db: Session, owner: UUID, project_id: UUID) -> Bibliography:
     sources.sort(key=lambda item: _sort_key(item[1], item[0]))
     seen: dict[tuple[str, int | None], int] = {}
     for _, source in sources:
-        group = (_first_author_key(source), source.year)
+        group = (_author_list_key(source), source.year)
         seen[group] = seen.get(group, 0) + 1
     items = []
     for identifier, source in sources:
         entry = format_source(source, style)
-        if style == "apa7" and seen[(_first_author_key(source), source.year)] > 1:
+        if style == "apa7" and seen[(_author_list_key(source), source.year)] > 1:
             entry.warnings.append(
                 "Another entry has the same authors and year; APA letter suffixes are not "
                 "added automatically.")
