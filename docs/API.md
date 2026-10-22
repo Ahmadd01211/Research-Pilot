@@ -75,3 +75,5 @@ Owned GET /api/v1/projects/{project_id}/documents/{document_id}/figures returns 
 ## Links and quality assessment
 
 Owned GET /api/v1/projects/{project_id}/documents/{document_id}/quality returns current source/reader/quality identity, per-page findings, checked/review/blocked/unassessed page counts and actual retained-link count. EvidencePage layout includes links and quality. Foreign/removed resources are hidden; incomplete extraction returns 409.
+
+Owner-scoped `GET /api/v1/projects/{project_id}/references/bibliography` returns a limited, read-only bibliography preview in the project's saved style (`apa7`, `mla9` or `chicago18`): `style`, `style_label`, `preview: true`, `limitations`, and `items` holding `reference_id`, plain `text`, `segments` (`text`, `italic`) and per-entry `warnings`. Removed references are excluded. Ordering is deterministic. The endpoint performs no writes or external requests. Foreign or removed projects return 404.

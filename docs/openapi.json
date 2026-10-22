@@ -209,6 +209,104 @@
         "title": "AnswerStatement",
         "type": "object"
       },
+      "Bibliography": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BibliographyEntry"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "preview": {
+            "const": true,
+            "title": "Preview",
+            "type": "boolean"
+          },
+          "style": {
+            "enum": [
+              "apa7",
+              "mla9",
+              "chicago18"
+            ],
+            "title": "Style",
+            "type": "string"
+          },
+          "style_label": {
+            "title": "Style Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "style",
+          "style_label",
+          "preview",
+          "limitations",
+          "items"
+        ],
+        "title": "Bibliography",
+        "type": "object"
+      },
+      "BibliographyEntry": {
+        "properties": {
+          "reference_id": {
+            "format": "uuid",
+            "title": "Reference Id",
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/BibliographySegment"
+            },
+            "title": "Segments",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reference_id",
+          "text",
+          "segments",
+          "warnings"
+        ],
+        "title": "BibliographyEntry",
+        "type": "object"
+      },
+      "BibliographySegment": {
+        "properties": {
+          "italic": {
+            "title": "Italic",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "italic"
+        ],
+        "title": "BibliographySegment",
+        "type": "object"
+      },
       "Capabilities": {
         "properties": {
           "answer_enabled": {
@@ -5934,6 +6032,49 @@
           }
         },
         "summary": "Create Reference",
+        "tags": [
+          "references"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/references/bibliography": {
+      "get": {
+        "operationId": "read_bibliography_api_v1_projects__project_id__references_bibliography_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bibliography"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Bibliography",
         "tags": [
           "references"
         ]
