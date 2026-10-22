@@ -291,7 +291,7 @@ def _sort_key(source: Source, identifier: UUID) -> tuple[str, int, str, str]:
 
 def _author_list_key(source: Source) -> str:
     names = [parse_name(raw)[0] for raw in source.authors]
-    return "|".join(f"{_sort_text(name.family)},{_sort_text(name.given)}" if name.personal
+    return "|".join(f"{_sort_text(name.family)},{_sort_text(name.given)}" if name.family is not None
                     else _sort_text(name.raw) for name in names)
 
 
