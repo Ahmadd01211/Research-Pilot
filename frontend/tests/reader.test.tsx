@@ -8,12 +8,12 @@ vi.mock('../src/features/documents/pdf-canvas', () => ({ default: ({ page, boxes
 const p='11111111-1111-4111-8111-111111111111', d='22222222-2222-4222-8222-222222222222';
 const layout={ version:'reader-v2', width:612,height:792,rotation:0,words:[{text:'Measured',box:[.1,.1,.2,.12],margin:false},{text:'evidence.',box:[.21,.1,.4,.12],margin:false}],passages:[{id:'anchor-one',text:'Measured evidence.',word_indices:[0,1]}],excluded_margin_text:[] };
 afterEach(()=>vi.unstubAllGlobals());
-function open(options: {legacy?:boolean;query?:string;table?:boolean;figure?:boolean;fallback?:boolean;formula?:boolean;captionTable?:boolean;subcolumns?:boolean;numberedSection?:boolean;metadata?:boolean;linked?:boolean}={}) {
+function open(options: {legacy?:boolean;query?:string;table?:boolean;figure?:boolean;fallback?:boolean;formula?:boolean;captionTable?:boolean;subcolumns?:boolean;numberedSection?:boolean;continued?:boolean;regression?:boolean;metadata?:boolean;linked?:boolean}={}) {
   const mock=vi.fn((url:string, init?:RequestInit)=>{
     if(url==='/api/v1/me')return Promise.resolve(Response.json({display_name:'Researcher',email:'r@example.com'}));
     if(url==='/api/v1/auth/csrf')return Promise.resolve(Response.json({csrf_token:'synthetic'}));
     if(init?.method==='POST')return Promise.resolve(Response.json({status:'queued'}));
-    if(url.includes('/pages/'))return Promise.resolve(Response.json({document_id:d,page_number:1,text:'Raw    source\nline.',source_sha256:'source-one',extractor_version:'extractor-v2',layout:options.legacy?null:options.linked?{...layout,links:[{id:'source-link',box:[.1,.1,.2,.12],text:'Measured',word_indices:[0],source_ids:['anchor-one'],target:'https://example.org/data',target_page:null,status:'allowed',origin:'annotation'}]}:options.metadata?{...layout,passages:[{...layout.passages[0],role:'title'}]}:options.subcolumns?{...layout,passages:[],words:[{text:'City',box:[.1,.2,.2,.22],margin:false},{text:'7.4',box:[.4,.2,.45,.22],margin:false},{text:'5',box:[.5,.2,.55,.22],margin:false},{text:'4',box:[.6,.2,.65,.22],margin:false},{text:'37',box:[.7,.2,.75,.22],margin:false}],tables:[{box:[.1,.1,.9,.5],detection:options.numberedSection?'aligned-numbered-section-columns':'numbered-model-subcolumns',rows:[['Location','Firm Share','Firm Rank','Employment Share','Employment Rank'].map((text,i)=>({id:'head-'+i,text,word_indices:[]})),['City','7.4','5','4','37'].map((text,i)=>({id:'value-'+i,text,word_indices:[i]}))]}]}:options.formula?{...layout,words:[{text:'g',box:[.43,.12,.44,.14],margin:false},{text:'=',box:[.45,.12,.46,.14],margin:false},{text:'\uf0da',box:[.48,.18,.50,.20],margin:false}],passages:[{id:'equation',text:'g = \uf0da',word_indices:[0,1,2]}]}:options.figure?{...layout,figures:[{id:'figure-one',label:'Figure 1',caption:'Measured evidence.',caption_word_indices:[0,1],box:options.fallback?null:[.1,.2,.8,.5],detection:options.fallback?'source_page':'embedded_image',related_passages:[]}]}:options.table || options.captionTable?{...layout,passages:options.captionTable?layout.passages:[],tables:[{box:[.1,.1,.9,.5],detection:"measured",rows:[[{...layout.passages[0],id:"cell-a",text:"Machine learning"},{...layout.passages[0],id:"cell-b",word_indices:options.captionTable?[1]:[0,1],text:"Algorithms that improve with data"}]]}]}:layout}));
+    if(url.includes('/pages/'))return Promise.resolve(Response.json({document_id:d,page_number:1,text:'Raw    source\nline.',source_sha256:'source-one',extractor_version:'extractor-v2',layout:options.legacy?null:options.linked?{...layout,links:[{id:'source-link',box:[.1,.1,.2,.12],text:'Measured',word_indices:[0],source_ids:['anchor-one'],target:'https://example.org/data',target_page:null,status:'allowed',origin:'annotation'}]}:options.metadata?{...layout,passages:[{...layout.passages[0],role:'title'}]}:options.subcolumns?{...layout,passages:[],words:[{text:'City',box:[.1,.2,.2,.22],margin:false},{text:'7.4',box:[.4,.2,.45,.22],margin:false},{text:'5',box:[.5,.2,.55,.22],margin:false},{text:'4',box:[.6,.2,.65,.22],margin:false},{text:'37',box:[.7,.2,.75,.22],margin:false}],tables:[{box:[.1,.1,.9,.5],detection:options.continued?'continued-numbered-columns':options.regression?'regression-model-columns':options.numberedSection?'aligned-numbered-section-columns':'numbered-model-subcolumns',rows:[['Location','Firm Share','Firm Rank','Employment Share','Employment Rank'].map((text,i)=>({id:'head-'+i,text,word_indices:[]})),['City','7.4','5','4','37'].map((text,i)=>({id:'value-'+i,text,word_indices:[i]}))]}]}:options.formula?{...layout,words:[{text:'g',box:[.43,.12,.44,.14],margin:false},{text:'=',box:[.45,.12,.46,.14],margin:false},{text:'\uf0da',box:[.48,.18,.50,.20],margin:false}],passages:[{id:'equation',text:'g = \uf0da',word_indices:[0,1,2]}]}:options.figure?{...layout,figures:[{id:'figure-one',label:'Figure 1',caption:'Measured evidence.',caption_word_indices:[0,1],box:options.fallback?null:[.1,.2,.8,.5],detection:options.fallback?'source_page':'embedded_image',related_passages:[]}]}:options.table || options.captionTable?{...layout,passages:options.captionTable?layout.passages:[],tables:[{box:[.1,.1,.9,.5],detection:"measured",rows:[[{...layout.passages[0],id:"cell-a",text:"Machine learning"},{...layout.passages[0],id:"cell-b",word_indices:options.captionTable?[1]:[0,1],text:"Algorithms that improve with data"}]]}]}:layout}));
     if(url.includes('/documents/'))return Promise.resolve(Response.json({id:d,filename:'Academic paper.pdf',status:'extracted',processing:{page_count:2}}));
     return Promise.resolve(Response.json({id:p,archived_at:null}));
   });
@@ -155,5 +155,28 @@ it('rejects an unknown PDF link anchor instead of highlighting other content',as
 
 it('uses column-header semantics for numbered tables with section rows',async()=>{
   open({subcolumns:true,numberedSection:true});
+  expect(await screen.findByRole('columnheader',{name:/Employment Share/})).toBeVisible();
+});
+
+it('jumps directly to a valid physical PDF page',async()=>{
+  const mock=open();const ui=userEvent.setup();
+  const input=await screen.findByRole('spinbutton',{name:'Go to page'});
+  await ui.clear(input);await ui.type(input,'2');await ui.click(screen.getByRole('button',{name:'Go'}));
+  expect(await screen.findByRole('img',{name:'PDF page 2, 0 highlighted words'})).toBeVisible();
+  expect(mock.mock.calls.some(([url])=>url==='/api/v1/projects/'+p+'/documents/'+d+'/pages/2')).toBe(true);
+});
+it('keeps the current page and explains out-of-range page jumps',async()=>{
+  open();const ui=userEvent.setup();
+  const input=await screen.findByRole('spinbutton',{name:'Go to page'});
+  await ui.clear(input);await ui.type(input,'3');await ui.click(screen.getByRole('button',{name:'Go'}));
+  expect(input).toBeInvalid();
+  expect(screen.getByRole('img',{name:'PDF page 1, 0 highlighted words'})).toBeVisible();
+});
+it('keeps continued-table headings available as accessible column headers',async()=>{
+  open({subcolumns:true,continued:true});
+  expect(await screen.findByRole('columnheader',{name:/Employment Share/})).toBeVisible();
+});
+it('keeps grouped regression headings available as accessible column headers',async()=>{
+  open({subcolumns:true,regression:true});
   expect(await screen.findByRole('columnheader',{name:/Employment Share/})).toBeVisible();
 });

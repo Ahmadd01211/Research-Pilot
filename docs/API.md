@@ -1,5 +1,9 @@
 # Identity API contract
 
+## Evidence search (current)
+
+The checked OpenAPI schema includes owner-scoped `GET /api/v1/projects/{project_id}/evidence/capabilities` (whether hosted indexing is configured), `GET .../evidence/indexes` (current index states), and `POST .../evidence/search` (question, selected document IDs, bounded result count). `POST /api/v1/projects/{project_id}/documents/{document_id}/index` explicitly queues eligible source chunks for a hosted embedding provider; the matching GET returns job progress. Indexing is disabled by default. Search returns page-linked source chunks, not a generated answer. State-changing calls require session, Origin and CSRF checks. Foreign or removed projects return 404.
+
 The checked contract is `openapi.json`; the frontend types are generated into `frontend/src/lib/api/schema.d.ts`. Generate the public schema with `backend/scripts/export_openapi.py` in the backend container, without connecting to a database, then run `npm run api:generate` in frontend. CI compares regenerated artifacts for drift.
 
 | Method | Path | Behavior |

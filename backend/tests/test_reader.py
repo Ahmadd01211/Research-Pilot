@@ -268,6 +268,6 @@ def test_model_table_chunks_include_headings_and_explicit_blanks():
         ],
     }
     chunks = make_chunks(uuid4(), "a" * 64, [layout])
-    assert "Description: Education" in chunks[1]["text"]
-    assert "(1) Revenue: 0.12 (0.03)" in chunks[1]["text"]
-    assert "(2) Revenue: [blank in source]" in chunks[1]["text"]
+    assert "Description: Education" in chunks[0]["text"]
+    assert "(1) Revenue: 0.12 (0.03)" in chunks[0]["text"]
+    assert "(2) Revenue: [blank in source]" in chunks[0]["text"]

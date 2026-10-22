@@ -10,14 +10,48 @@ from typing import Any
 from pdfminer import __version__ as miner_version
 from pdfplumber import __version__ as plumber_version
 
+from app.modules.documents.back_matter import heading_starts as back_matter_starts
+from app.modules.documents.back_matter import is_endnote_start
+from app.modules.documents.continued_tables import continued_tables
 from app.modules.documents.figures import figures_on_page, finalize_figures
 from app.modules.documents.front_matter import front_matter
 from app.modules.documents.labelled_tables import labelled_tables
 from app.modules.documents.links import finalize_links, page_links
 from app.modules.documents.quality import assess_page
+from app.modules.documents.regression_tables import regression_tables
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v17:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v32:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+
+
+def _reading_order(words: list[dict[str, Any]], rotation: int = 0) -> list[dict[str, Any]]:
+    """Return visual reading order, including full-column newspaper layouts.
+
+    pdfplumber's ``use_text_flow`` follows the PDF's content-stream order,
+    which is often right-column-first. Detect a strong vertical gutter and
+    read complete columns left-to-right, while leaving ordinary single-column
+    pages in their measured top-to-bottom order.
+    """
+    if rotation or len(words) < 16:
+        return words
+    body_centers = sorted(
+        (word["box"][0] + word["box"][2]) / 2
+        for word in words
+        if word["box"][1] > 0.08 and word["box"][3] < 0.92
+    )
+    centers = body_centers or sorted((word["box"][0] + word["box"][2]) / 2 for word in words)
+    gaps = [(centers[i + 1] - centers[i], i) for i in range(len(centers) - 1)]
+    gap, split = max(gaps, default=(0.0, 0))
+    if gap < 0.14:
+        return words
+    threshold = (centers[split] + centers[split + 1]) / 2
+    left = [word for word in words if (word["box"][0] + word["box"][2]) / 2 < threshold]
+    right = [word for word in words if (word["box"][0] + word["box"][2]) / 2 >= threshold]
+    if len(left) < 8 or len(right) < 8:
+        return words
+    return sorted(left, key=lambda word: (word["box"][1], word["box"][0])) + sorted(
+        right, key=lambda word: (word["box"][1], word["box"][0])
+    )
 
 
 def flow_bounds(word: dict[str, Any], rotation: int) -> tuple[float, float]:
@@ -106,6 +140,39 @@ def numbered_equations(words: list[dict[str, Any]], excluded: set[int]) -> list[
     return groups
 
 
+def classify_publication_footers(layout: dict[str, Any]) -> None:
+    """Keep clearly smaller first-page publication notices out of research evidence."""
+    words = layout["words"]
+    passages = layout["passages"]
+    if not any(p.get("role") == "abstract" for p in passages):
+        return
+    body_heights = [
+        words[i]["box"][3] - words[i]["box"][1]
+        for passage in passages
+        if passage.get("role", "body") == "body"
+        for i in passage["word_indices"]
+        if words[i]["box"][1] < 0.9
+    ]
+    if not body_heights:
+        return
+    usual_height = median(body_heights)
+    for passage in passages:
+        if passage.get("role", "body") != "body" or not passage["word_indices"]:
+            continue
+        positions = [words[i]["box"] for i in passage["word_indices"]]
+        if min(box[1] for box in positions) < 0.9:
+            continue
+        small_print = median(box[3] - box[1] for box in positions) < usual_height * 0.8
+        publication_notice = re.search(
+            r"\b(?:copyright|creative commons|open access article|published by|all rights reserved|issn)\b"
+            r"|\b(?:19|20)\d{2};\d{1,4}:\d+",
+            passage["text"],
+            re.I,
+        )
+        if small_print and publication_notice:
+            passage["role"] = "publication_metadata"
+
+
 def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
     layouts = []
     total_words = 0
@@ -154,11 +221,14 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
             if box[0] >= box[2] or box[1] >= box[3]:
                 continue
             words.append({"text": text, "box": [round(v, 6) for v in box], "margin": False})
+        words = _reading_order(words, page.rotation or 0)
         total_words += len(words)
         if len(words) > 12000 or total_words > 200000:
             raise MemoryError
         tables = striped_tables(view, words)
         tables += labelled_tables(view, words, tables)
+        tables += continued_tables(view, words, tables)
+        tables += regression_tables(view, words, tables)
         figures = figures_on_page(view, words, tables)
         links = page_links(view, words, page_ids, len(pdf.pages))
         total_links += len(links)
@@ -199,6 +269,7 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
             entries.append((signature, indices, text))
         signatures.update({entry[0] for entry in entries})
         candidates.append(entries)
+    back_role = "body"
     for page_index, (layout, entries) in enumerate(zip(layouts, candidates, strict=True)):
         for signature, indices, text in entries:
             if signatures[signature] >= max(3, len(layouts) * 0.4):
@@ -235,8 +306,34 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
             layout["height"],
             layout["rotation"],
         )
+        back_headings = back_matter_starts(
+            layout["words"], table_words | figure_words | equation_words | front_words,
+            layout["rotation"],
+        )
+        if page_index == 0:
+            anchors = [i for i, role in back_headings.items() if role in {
+                "acknowledgments", "endnotes", "references",
+            }]
+            back_headings = {
+                i: role for i, role in back_headings.items()
+                if anchors and i >= min(anchors)
+            }
         current: list[int] = []
         length = 0
+
+        def flush(role: str, page_layout: dict[str, Any] = layout) -> None:
+            nonlocal current, length
+            if current:
+                passage: dict[str, Any] = {
+                    "text": " ".join(page_layout["words"][j]["text"] for j in current),
+                    "word_indices": current,
+                }
+                if role != "body":
+                    passage["role"] = role
+                page_layout["passages"].append(passage)
+                current = []
+                length = 0
+
         for i, word in enumerate(layout["words"]):
             if (
                 word["margin"]
@@ -248,14 +345,7 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                 if (
                     i in equation_words or i in table_words or i in figure_words or i in front_words
                 ) and current:
-                    layout["passages"].append(
-                        {
-                            "text": " ".join(layout["words"][j]["text"] for j in current),
-                            "word_indices": current,
-                        }
-                    )
-                    current = []
-                    length = 0
+                    flush(back_role)
                 continue
             word_top, _ = flow_bounds(word, layout["rotation"])
             previous_top, previous_bottom = (
@@ -271,36 +361,25 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
             if current and (
                 caption_start
                 or i in heading_starts
+                or i in back_headings
+                or (back_role == "endnotes" and is_endnote_start(
+                    layout["words"], i, table_words | figure_words | equation_words | front_words,
+                    layout["rotation"],
+                ))
                 or word["text"] in {"Notes:", "Note:"}
                 or word_top < previous_top - 0.025
                 or word_top > previous_bottom + 0.045
             ):
-                layout["passages"].append(
-                    {
-                        "text": " ".join(layout["words"][j]["text"] for j in current),
-                        "word_indices": current,
-                    }
-                )
-                current = []
-                length = 0
+                flush(back_role)
+            if i in back_headings:
+                back_role = back_headings[i]
             current.append(i)
             length += len(word["text"]) + 1
             if length >= 700 and (word["text"].endswith((".", "?", "!", ";")) or length >= 1100):
-                layout["passages"].append(
-                    {
-                        "text": " ".join(layout["words"][j]["text"] for j in current),
-                        "word_indices": current,
-                    }
-                )
-                current = []
-                length = 0
-        if current:
-            layout["passages"].append(
-                {
-                    "text": " ".join(layout["words"][j]["text"] for j in current),
-                    "word_indices": current,
-                }
-            )
+                flush(back_role)
+        flush(back_role)
+        if page_index == 0:
+            classify_publication_footers(layout)
     for number, layout in enumerate(layouts, 1):
         for passage in layout["passages"] + [
             cell for table in layout["tables"] for row in table["rows"] for cell in row

@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     session_idle_minutes: int = 60
     rate_namespace: str = "rp:identity"
     storage_root: Path = Path("/var/lib/researchpilot")
+    google_api_key: SecretStr | None = None
+    embedding_enabled: bool = False
+    embedding_model: str = "gemini-embedding-2"
+    embedding_dimensions: int = 768
+    answer_enabled: bool = False
+    answer_model: str = "gemini-3.8-flash"
 
     @model_validator(mode="after")
     def validate_environment(self) -> "Settings":
@@ -27,6 +33,20 @@ class Settings(BaseSettings):
             raise ValueError("Production requires HTTPS and secure cookies")
         if self.session_hours < 1 or self.session_idle_minutes < 1:
             raise ValueError("Session expiry must be positive")
+        if self.embedding_model != "gemini-embedding-2" or self.embedding_dimensions != 768:
+            raise ValueError("Unsupported embedding model or dimensions")
+        if self.embedding_enabled and (
+            self.google_api_key is None or not self.google_api_key.get_secret_value().strip()
+        ):
+            raise ValueError("Enabled embeddings require a server-side Google API key")
+        if self.answer_enabled and (
+            self.google_api_key is None or not self.google_api_key.get_secret_value().strip()
+        ):
+            raise ValueError("Enabled answers require a server-side Google API key")
+        if not self.answer_model.startswith("gemini-") or not all(
+            char.isalnum() or char in ".-" for char in self.answer_model
+        ):
+            raise ValueError("Invalid answer model")
         return self
 
     @property

@@ -19,6 +19,7 @@ def extract_document(document_id: str) -> None:
             sessionmaker(engine, expire_on_commit=False),
             LocalStorage(settings.storage_root),
             UUID(document_id),
+            settings,
         )
     finally:
         engine.dispose()

@@ -11,14 +11,32 @@ def front_matter(words: list[dict[str, Any]], rotation: int) -> list[dict[str, A
         return []
     abstract = abstracts[0]
     ax, ay = abstract["box"][:2]
+    abstract_bottom = abstract["box"][3]
+    # The heading can share a horizontal band with an affiliation column.
+    # Find the first substantial line after it; that is the prose boundary.
+    lines: dict[float, list[dict[str, Any]]] = {}
+    for word in words:
+        if word["box"][1] >= abstract_bottom:
+            key = round(word["box"][1], 3)
+            lines.setdefault(key, []).append(word)
+    prose_lines = [
+        key
+        for key, line in lines.items()
+        if len(line) >= 6
+        and not any(
+            token in {"correspondence", "funding", "information", "email:"}
+            for word in line
+            for token in [word["text"].casefold()]
+        )
+    ]
+    abstract_prose_top = min(prose_lines) if prose_lines else abstract_bottom
+    abstract_line_keys = set(prose_lines)
     introductions = [
         w
         for w in words
         if w["text"].casefold() == "introduction" and w["box"][1] > ay and w["box"][0] < 0.3
     ]
-    if not introductions or not any(
-        w["text"].casefold() in {"doi:", "received:", "correspondence"} for w in words
-    ):
+    if not introductions:
         return []
     body_top = min(w["box"][1] for w in introductions) - 0.003
     candidates = [
@@ -69,7 +87,10 @@ def front_matter(words: list[dict[str, Any]], rotation: int) -> list[dict[str, A
         elif title_bottom < cy < ay - 0.025:
             role = "authors"
         elif ay - 0.025 <= cy < body_top:
-            if w["box"][0] >= ax - 0.005 and cy >= ay:
+            # Abstract prose may span the full page width or a different
+            # column from its centered heading. The vertical boundary is the
+            # reliable signal; author affiliations are above the heading.
+            if round(w["box"][1], 3) in abstract_line_keys:
                 role = "abstract"
             elif w["box"][2] < ax - 0.015:
                 role = "affiliations"

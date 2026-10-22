@@ -4,14 +4,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from app.core.config import Settings
 from app.core.dependencies import current_user, database, settings_for
-from app.modules.documents import processing, service
-from app.modules.documents.models import DocumentPageText
+from app.modules.documents import indexing, processing, service
+from app.modules.documents.models import DocumentIndex, DocumentPageText
 from app.modules.documents.reader import READER_VERSION
 from app.modules.documents.schemas import (
     DocumentPage,
@@ -28,6 +29,44 @@ from app.modules.identity.models import User
 from app.modules.projects.service import owned
 
 router = APIRouter(prefix="/api/v1/projects/{project_id}/documents", tags=["documents"])
+
+
+class IndexRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    state: str
+    processed_chunks: int
+    total_chunks: int
+    error_code: str | None
+    model: str
+
+
+@router.get("/{document_id}/index", response_model=IndexRead | None)
+def index_status(
+    project_id: UUID, document_id: UUID,
+    user: User = Depends(current_user), db: Session = Depends(database),
+) -> DocumentIndex | None:
+    paper = service.owned(db, user.id, project_id, document_id)
+    return indexing.current_index(db, paper)
+
+
+@router.post("/{document_id}/index", response_model=IndexRead)
+def request_index(
+    project_id: UUID, document_id: UUID,
+    user: User = Depends(current_user), db: Session = Depends(database),
+    settings: Settings = Depends(settings_for),
+) -> IndexRead:
+    result = indexing.queue_index(db, user.id, project_id, document_id, settings)
+    if result is None:
+        return IndexRead(
+            id=document_id,
+            state="preparing_reader",
+            processed_chunks=0,
+            total_chunks=0,
+            error_code=None,
+            model=settings.embedding_model,
+        )
+    return IndexRead.model_validate(result)
 
 
 @router.get("", response_model=DocumentPage)
@@ -271,6 +310,7 @@ def document_quality(
                 page_number=number,
                 state=quality["state"] if current else "not_assessed",
                 findings=quality["findings"] if current else [],
+                hybrid=quality.get("hybrid", {}) if current else {},
             )
         )
         if current:

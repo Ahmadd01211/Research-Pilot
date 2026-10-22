@@ -9,6 +9,7 @@ import pytest
 from pypdf import PdfReader
 
 from app.modules.documents.chunks import make_chunks
+from app.modules.documents.quality import assess_page
 from app.modules.documents.reader import prepare_layouts
 from app.modules.documents.schemas import ReaderLayout
 from tests.pdf_corpus import CASES, corpus_pdf
@@ -40,7 +41,15 @@ def check_case(case):
     if case.endswith("table"):
         assert len(layout["tables"]) == 1
         rows = layout["tables"][0]["rows"]
-        assert len(rows) == (7 if case == "summary-table" else 6)
+        assert len(rows) == (
+            3
+            if case in {"continued-numeric-table", "continued-categorical-table"}
+            else 5
+            if case == "regression-multiheader-table"
+            else 7
+            if case == "summary-table"
+            else 6
+        )
         assert all(
             len(row)
             == (
@@ -48,6 +57,12 @@ def check_case(case):
                 if case == "summary-table"
                 else 5
                 if case == "grouped-table"
+                else 5
+                if case == "continued-numeric-table"
+                else 8
+                if case == "continued-categorical-table"
+                else 5
+                if case == "regression-multiheader-table"
                 else 3
                 if case == "ambiguous-grouped-table"
                 else 4
@@ -76,6 +91,63 @@ def check_case(case):
         assert not body & table
         assert any("Notes:" in p["text"] for p in layout["passages"])
         assert any("Do not use AI: 1.3" in c["text"] for c in chunks)
+    if case == "back-matter":
+        roles = [p.get("role", "body") for p in layout["passages"]]
+        assert roles == [
+            "body", "acknowledgments", "data_availability", "orcid",
+            "endnotes", "endnotes", "endnotes", "references", "body",
+        ]
+        note_text = [p["text"] for p in layout["passages"] if p.get("role") == "endnotes"]
+        assert note_text[1].startswith("1 The first note")
+        assert note_text[2].startswith("2 The second note")
+        eligible = [c["text"] for c in chunks if c["kind"] == "prose"]
+        assert len(eligible) == 5
+        assert all(not any(word in c for word in ("Colleagues", "ORCID", "REFERENCES", "ENDNOTES")) for c in eligible)
+        assert any("Approved researchers" in c for c in eligible)
+        assert any("another measured result" in c for c in eligible)
+    if case == "continued-numeric-table":
+        assert layout["tables"][0]["detection"] == "continued-numbered-columns"
+        assert layout["tables"][0]["rows"][0][2]["text"] == "(2) Use AI"
+        quality = assess_page(layout)
+        assert not quality["withhold_prose"]
+        assert "unstructured_table" not in {finding["code"] for finding in quality["findings"]}
+        rows = [c for c in chunks if c["kind"] == "table_row"]
+        assert len(rows) == 2
+        assert "Use AI: 17.1" in rows[0]["text"]
+        assert "Difference: -0.7" in rows[0]["text"]
+        assert not any("Continuation notes" in c["text"] for c in rows)
+    if case == "continued-categorical-table":
+        table = layout["tables"][0]
+        assert table["detection"] == "continued-numbered-columns"
+        assert table["rows"][0][0]["text"] == "Description"
+        assert [cell["text"] for cell in table["rows"][1][1:]] == ["Yes"] * 7
+        assert table["rows"][2][7]["text"] == "209,000"
+        assert not any("Notes:" in cell["text"] for row in table["rows"] for cell in row)
+        assert "unstructured_table" not in {finding["code"] for finding in assess_page(layout)["findings"]}
+        assert len([chunk for chunk in chunks if chunk["kind"] == "table_row"]) == 2
+    if case == "regression-multiheader-table":
+        table = layout["tables"][0]
+        assert table["detection"] == "regression-model-columns"
+        assert not any(
+            "publisher" in cell["text"].lower()
+            for row in table["rows"]
+            for cell in row
+        )
+        assert [cell["text"] for cell in table["rows"][0]] == [
+            "Outcome",
+            "(1) All firms",
+            "(2) AI users",
+            "(3) NonAI users",
+            "(4) Difference overall",
+        ]
+        rows = [chunk for chunk in chunks if chunk["kind"] == "table_row"]
+        assert len(rows) == 4
+        assert "0.11*** (0.02)" in rows[0]["text"]
+        assert "Advanced degree (1/0)" in rows[1]["text"]
+        assert "(3) NonAI users: 0.01 (0.02)" in rows[2]["text"]
+        quality = assess_page(layout)
+        assert not quality["withhold_prose"]
+        assert "unstructured_table" not in {finding["code"] for finding in quality["findings"]}
     if case == "front-matter":
         roles = {p["role"] for p in layout["passages"]}
         assert {
@@ -156,7 +228,7 @@ def check_case(case):
                 for c in chunks
             )
             assert any("B. Startup conditions | Condition 1" in c["text"] for c in chunks)
-            assert len([c for c in chunks if c["kind"] == "table_row"]) == 7
+            assert len([c for c in chunks if c["kind"] == "table_row"]) == 6
         else:
             assert layout["tables"][0]["detection"] == "aligned-labelled-ambiguous"
             assert not any(c["kind"] == "table_row" for c in chunks)
@@ -196,9 +268,14 @@ def check_case(case):
         assert len(layout["figures"]) == 1
         figure = layout["figures"][0]
         if case == "vector-figure":
-            assert figure["box"] is None
-            assert all(c["kind"] != "prose" for c in chunks)
-            fallback.append("full-page visual; ordinary page prose withheld")
+            assert figure["box"] is not None
+            assert figure["detection"] == "vector_graphics"
+            assert all(
+                "Synthetic measured results" not in c["text"]
+                for c in chunks
+                if c["kind"] == "prose"
+            )
+            fallback.append("measured vector diagram crop; ordinary page prose withheld")
         else:
             assert figure["box"] is not None
         if case == "uncaptioned-image":

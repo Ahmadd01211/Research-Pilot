@@ -27,11 +27,11 @@ function open(state = 'extracted', error: string | null = null, detail = false) 
   render(<QueryClientProvider client={cache}><MemoryRouter initialEntries={[`/projects/${project}/library${detail ? '/' + document : ''}`]}><AppRoutes/></MemoryRouter></QueryClientProvider>);
   return mock;
 }
-it('links only extracted papers to source text without claiming AI indexing', async () => {
+it('links extracted papers to source text and describes optional indexing', async () => {
   open();
   expect(await screen.findByRole('link', { name: 'Review extracted text (2 pages)' })).toHaveAttribute('href', `/projects/${project}/library/${document}`);
   expect(screen.getByText('Text extracted')).toBeVisible();
-  expect(screen.getByText(/not yet available to Research Chat/)).toBeVisible();
+  expect(screen.getByText(/Eligible papers can then be indexed/)).toBeVisible();
 });
 it('explains insufficient text and does not offer a pointless retry', async () => {
   open('failed', 'insufficient_text');

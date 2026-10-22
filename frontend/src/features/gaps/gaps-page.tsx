@@ -1,0 +1,58 @@
+﻿import { useState, type FormEvent } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, ArrowUpRight, Lightbulb, LoaderCircle, Plus, Save, Trash2 } from 'lucide-react';
+import { Link, useParams } from 'react-router';
+import { mutate, read } from '@/lib/api/client';
+import type { components } from '@/lib/api/schema';
+import { useProject } from '@/features/projects/api';
+
+type MatrixRead = components['schemas']['MatrixRead'];
+type GapPage = components['schemas']['GapPage'];
+type GapRead = components['schemas']['GapRead'];
+type EvidenceRead = components['schemas']['EvidenceRead'];
+type Stance = 'supports' | 'challenges';
+type Choice = Stance | 'none';
+
+const uncertainty: Record<GapRead['uncertainty'], { label: string; explanation: string }> = {
+  limited_coverage: { label: 'Limited coverage', explanation: 'Supporting notes come from one paper. Review more studies before describing a literature gap.' },
+  candidate_across_papers: { label: 'Cross-paper candidate', explanation: 'Supporting notes come from more than one paper. This still needs a broader literature search.' },
+  mixed_evidence: { label: 'Mixed evidence', explanation: 'At least one linked matrix field challenges this candidate. Review both sides.' },
+  source_needs_review: { label: 'Source needs review', explanation: 'A matrix row was removed or its reader version changed. Recheck source links.' },
+};
+function sourceUrl(projectId: string, item: EvidenceRead) {
+  const params = new URLSearchParams({ page: String(item.page_number), source: item.source_sha256, reader: item.reader_version });
+  if (item.kind === 'prose' && typeof item.source_metadata.passage_id === 'string') params.set('passage', item.source_metadata.passage_id);
+  if (item.kind === 'figure_caption' && typeof item.source_metadata.figure_id === 'string') params.set('caption', item.source_metadata.figure_id);
+  return `/projects/${projectId}/library/${item.document_id}?${params}`;
+}
+function GapEditor({ projectId, matrix, gap, onDone }: { projectId: string; matrix: MatrixRead; gap?: GapRead; onDone: () => void }) {
+  const cache = useQueryClient();
+  const cells = matrix.items.flatMap(row => row.cells.map(cell => ({ row, cell })));
+  const currentIds = new Set(cells.map(item => item.cell.id));
+  const [title, setTitle] = useState(gap?.title ?? '');
+  const [rationale, setRationale] = useState(gap?.rationale ?? '');
+  const [choices, setChoices] = useState<Record<string, Choice>>(() => Object.fromEntries(gap?.evidence.filter(item => currentIds.has(item.matrix_cell_id)).map(item => [item.matrix_cell_id, item.stance]) ?? []));
+  const [validation, setValidation] = useState('');
+  const save = useMutation({ mutationFn: (evidence: { matrix_cell_id: string; stance: Stance }[]) => gap ? mutate<GapRead>(`/projects/${projectId}/gaps/${gap.id}`, 'PUT', { title: title.trim(), rationale: rationale.trim(), expected_revision: gap.revision, evidence }) : mutate<GapRead>(`/projects/${projectId}/gaps`, 'POST', { title: title.trim(), rationale: rationale.trim(), evidence }), onSuccess: async () => { await cache.invalidateQueries({ queryKey: ['gaps', projectId] }); onDone(); } });
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const evidence = Object.entries(choices).filter((entry): entry is [string, Stance] => entry[1] !== 'none').map(([matrix_cell_id, stance]) => ({ matrix_cell_id, stance }));
+    if (!evidence.some(item => item.stance === 'supports')) { setValidation('Choose at least one supporting matrix field.'); return; }
+    if (evidence.length > 12) { setValidation('Use at most twelve fields for one candidate.'); return; }
+    setValidation(''); save.mutate(evidence);
+  }
+  return <section className="card gap-editor"><div className="between"><div><p className="eyebrow">RESEARCHER-AUTHORED HYPOTHESIS</p><h2>{gap ? 'Edit candidate' : 'New candidate gap'}</h2></div><button className="btn" type="button" onClick={onDone}>Close</button></div><p className="muted mt16">Describe a possible gap, then mark matrix notes that support or challenge it. A missing field is not evidence of absence in the literature.</p>{gap?.evidence.some(item => !currentIds.has(item.matrix_cell_id)) && <div role="status" className="notice mt16">Earlier matrix cells are no longer current. Choose current supporting evidence before saving this revision.</div>}<form onSubmit={submit}><label className="field mt24">Candidate title<input value={title} onChange={event => setTitle(event.target.value)} minLength={5} maxLength={160} required placeholder="Example: Limited evidence across small firms"/></label><label className="field mt16">Why this might be a gap<textarea value={rationale} onChange={event => setRationale(event.target.value)} minLength={10} maxLength={2000} required rows={4} placeholder="Describe the scope of the papers reviewed and what remains uncertain."/></label><h3 className="mt24">Link evidence from the matrix</h3><div className="gap-evidence-picker">{cells.map(({ row, cell }) => <div className="gap-evidence-option" key={cell.id}><div><strong>{row.document_filename} · {cell.field.replaceAll('_', ' ')} · page {cell.page_number}</strong><p>{cell.value}</p></div><label>Role<select aria-label={`Evidence role for ${row.document_filename} ${cell.field}`} value={choices[cell.id] ?? 'none'} onChange={event => setChoices(current => ({ ...current, [cell.id]: event.target.value as Choice }))}><option value="none">Not used</option><option value="supports">Supports</option><option value="challenges">Challenges</option></select></label></div>)}{!cells.length && <p className="muted">Add source-linked notes to the evidence matrix before proposing a gap.</p>}</div>{validation && <p role="alert" className="alert mt16">{validation}</p>}{save.isError && <p role="alert" className="alert mt16">{save.error.message} Your draft remains here for review.</p>}<div className="row mt24"><button className="btn primary" type="submit" disabled={!cells.length || save.isPending}>{save.isPending ? <><LoaderCircle className="spin" size={15}/>Saving…</> : <><Save size={15}/>Save candidate</>}</button></div></form></section>;
+}
+export function GapsPage() {
+  const { id = '' } = useParams(), project = useProject(id), cache = useQueryClient();
+  const [editing, setEditing] = useState<GapRead | 'new' | null>(null);
+  const [removing, setRemoving] = useState<GapRead | null>(null);
+  const matrix = useQuery({ queryKey: ['matrix', id], queryFn: ({ signal }) => read<MatrixRead>(`/projects/${id}/matrix`, signal), enabled: !!project.data });
+  const gaps = useQuery({ queryKey: ['gaps', id], queryFn: ({ signal }) => read<GapPage>(`/projects/${id}/gaps`, signal), enabled: !!project.data });
+  const remove = useMutation({ mutationFn: (gap: GapRead) => mutate<void>(`/projects/${id}/gaps/${gap.id}/remove`, 'POST', { expected_revision: gap.revision }), onSuccess: async () => { setRemoving(null); await cache.invalidateQueries({ queryKey: ['gaps', id] }); } });
+  if (project.isPending) return <p role="status">Opening gap analysis…</p>;
+  if (project.isError || !project.data) return <section className="card"><h1>Project unavailable</h1><Link className="btn mt16" to="/projects">All projects</Link></section>;
+  return <><Link className="back-projects" to={`/projects/${id}`}><ArrowLeft size={14}/>Back to project</Link><div className="page-heading mt24"><div><p className="eyebrow">GAP ANALYSIS</p><h1>Candidate research gaps</h1><p className="page-subtitle">Develop bounded hypotheses from your reviewed evidence, with uncertainty and counterevidence visible.</p></div><div className="row wrap"><Link className="btn" to={`/projects/${id}/matrix`}>Open evidence matrix</Link><button className="btn primary" disabled={!!project.data.archived_at || !!editing || !matrix.data?.items.some(row => row.cells.length)} onClick={() => setEditing('new')}><Plus size={16}/>Add candidate</button></div></div><div className="notice mb24"><Lightbulb size={18}/><p>These are researcher-authored candidates, not AI discoveries or proof that work is absent elsewhere. Search beyond the uploaded papers before making a literature-wide claim.</p></div>
+    {matrix.isPending || gaps.isPending ? <p role="status">Loading reviewed evidence and candidates…</p> : matrix.isError || gaps.isError ? <div role="alert" className="alert">Could not load gap analysis. <button className="btn" onClick={() => { void matrix.refetch(); void gaps.refetch(); }}>Retry</button></div> : <>{editing && <GapEditor key={editing === 'new' ? 'new' : editing.id} projectId={id} matrix={matrix.data ?? { items: [] }} gap={editing === 'new' ? undefined : editing} onDone={() => setEditing(null)}/>}{!matrix.data?.items.length && <div className="card project-empty"><Lightbulb size={28}/><h2>Build the evidence matrix first</h2><p>Link at least one note to a source passage, then return to frame a candidate gap.</p><Link className="btn primary" to={`/projects/${id}/matrix`}>Open matrix</Link></div>}{matrix.data?.items.length && !gaps.data?.items.length && <div className="card project-empty"><Lightbulb size={28}/><h2>No gap candidates yet</h2><p>Compare the matrix, describe a bounded hypothesis, and attach supporting and challenging notes.</p></div>}<div className="gap-list">{gaps.data?.items.map(gap => <article className="card gap-card" key={gap.id}><div className="between"><div><p className="eyebrow">CANDIDATE · USER-AUTHORED</p><h2>{gap.title}</h2></div><span className="badge">{uncertainty[gap.uncertainty].label}</span></div><p className="muted">{uncertainty[gap.uncertainty].explanation}</p><p className="gap-rationale">{gap.rationale}</p><p className="tiny muted">{gap.supporting_papers} supporting {gap.supporting_papers === 1 ? 'paper' : 'papers'} in this matrix · Updated {new Date(gap.updated_at).toLocaleDateString()}</p><div className="gap-evidence-groups">{(['supports', 'challenges'] as const).map(stance => <section key={stance}><h3>{stance === 'supports' ? 'Supporting notes' : 'Challenging notes'}</h3>{gap.evidence.filter(item => item.stance === stance).length ? <ul>{gap.evidence.filter(item => item.stance === stance).map(item => <li key={item.matrix_cell_id}><strong>{item.document_filename} · {item.field} · page {item.page_number}</strong><p>{item.value}</p>{item.stale && <span className="badge archived">Source needs review</span>}<Link className="text-link" to={sourceUrl(id, item)}>Check original PDF <ArrowUpRight size={14}/></Link></li>)}</ul> : <p className="tiny muted">No challenging note linked yet. This does not mean none exists.</p>}</section>)}</div><div className="row wrap mt24"><button className="btn" disabled={!!project.data.archived_at || !!editing} onClick={() => setEditing(gap)}>Edit candidate</button><button className="btn danger" disabled={!!project.data.archived_at || remove.isPending} onClick={() => setRemoving(gap)}><Trash2 size={14}/>Remove</button></div></article>)}</div></>}
+    {removing && <div className="card mt24"><h2>Remove this candidate?</h2><p className="muted mt16">It will disappear from gap analysis. Its matrix notes and original papers stay available.</p>{remove.isError && <p role="alert" className="alert mt16">{remove.error.message}</p>}<div className="row mt16"><button className="btn" onClick={() => setRemoving(null)}>Keep candidate</button><button className="btn danger" disabled={remove.isPending} onClick={() => remove.mutate(removing)}>{remove.isPending ? 'Removing…' : 'Remove candidate'}</button></div></div>}</>;
+}

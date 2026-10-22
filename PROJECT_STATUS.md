@@ -1,6 +1,63 @@
 # ResearchPilot project status
 
-Updated: 19 October 2026. Branch: feat/source-reader. The tested Vite/identity foundation is checkpointed in local Git. No remote/PR or public deployment exists.
+## Persistent Research Chat - 22 October 2026
+
+Research Chat supports project-owned saved threads and multi-turn follow-ups. Each turn preserves selected paper IDs, cited source text, physical PDF page, source hash, reader version and model response, so later reprocessing does not rewrite the citation history. Up to six prior turns are provided as untrusted context; new claims must cite freshly retrieved evidence. Migration 0014 is applied, generated API types are current, and the local stack is healthy. Frontend production build, Ruff and strict mypy pass. Live provider quality remains unverified until embeddings and answers are configured. Budgets, metering and thread retention controls remain future work. See `docs/learning/16-persistent-research-chat.md`.
+
+## Docling parser pilot — 22 October 2026
+
+An isolated Docling 2.141.0 pilot parsed the supplied 41-page paper without changing production ingestion. It reconstructed page 8 definitions and page 34 appendix rows well, but merged or shifted cells in dense regression tables, including placing Table 7's venture-capital coefficient on the following row. It exposed only one structured hyperlink against 17 original PDF link annotations and included repeated journal logos as pictures. The current reader's seven reviewed retrieval questions remain 7/7 in the offline lexical baseline. Keep Docling as a candidate behind source-quality checks, not a wholesale replacement. See `docs/DOCLING_PILOT.md` and `backend/scripts/docling_pilot.py`.
+
+## Back-matter retrieval boundary — 21 October 2026
+
+The real paper's printed page 400 had one passage combining acknowledgments, data availability, ORCID and endnote 1; it was eligible as body evidence. Reader v22 now separates recognized back-matter sections and numbered endnotes across pages, resets at appendices, and chunker v12 excludes administrative roles while keeping data availability and individual endnotes with role labels. A synthetic PDF regression and the full 130-test isolated backend suite passed; Ruff, strict mypy and the web production build passed. The original 41-page paper produced 378 eligible chunks with 7/7 reviewed answers covered and 7/7 top-five hits in the offline lexical baseline. The local stack was rebuilt and all services and API readiness are healthy. Existing uploads require an explicit reader update and, if previously indexed, new embeddings. See `docs/learning/07-general-pdf-extraction.md`.
+
+## Export snapshot slice — 21 October 2026
+
+Reference CSV and writing-draft Markdown snapshots, owner-scoped download history and idempotent creation are implemented. Migration 0013 adds immutable file records. The isolated backend suite passed 129 tests, including formula-safe CSV and unchanged historical downloads; frontend lint/typecheck, 66 tests and production build passed. Migration 0013 is live; API readiness passes and the local services are healthy. Browser visual review remains for the user. The formats are raw metadata and Markdown, not formatted citations or DOCX/XLSX. See `docs/learning/15-export-snapshots.md`.
+
+## Writing draft slice — 21 October 2026
+
+The Writing Studio now stores researcher-authored Markdown drafts with explicit save status, heading outline, reference-marker insertion, immutable version history and project-scoped citation validation. Migration 0012 adds drafts and snapshots. Backend owner/revision/version tests and frontend insertion test pass; see `docs/learning/14-writing-drafts.md`. This is a source-linked draft editor, not yet rich-text, AI co-writing, formatted citations or export. The local API, web, dispatcher and worker are healthy after migration 0012; the readiness check passes. Browser visual review remains for the user.
+
+## Reference Manager slice — 21 October 2026
+
+Researcher-verified bibliography CRUD, project citation-style preference, exact DOI duplicate blocking, probable title/year warnings, PDF linking, owner scoping, revision conflicts and soft removal are implemented. Migration 0011 adds records and settings. Backend 125 tests, Ruff and strict mypy, frontend lint/typecheck, 64 tests and build passed. The local stack was rebuilt with migration 0011 before the writing slice; browser visual acceptance remains for the user. Formatting, export and automatic metadata lookup are not claimed. See `docs/learning/13-reference-manager.md`.
+
+## Candidate gap analysis slice — 21 October 2026
+
+The gap workspace accepts researcher-authored hypotheses linked to active matrix cells, preserving the route to original PDF evidence. It displays supporting and challenging notes separately and derives transparent uncertainty labels from the number of supporting papers, linked challenges and stale source records. It never treats a blank matrix field as proof of absence in the literature. Owner scoping, archived-project restrictions, revisions and soft removal are enforced by FastAPI. Migration 0009 adds gap and evidence-link tables; migration 0010 versions matrix cells so editing a cited note cannot break an existing gap's provenance. The final isolated backend suite passed 123 tests, Ruff and strict mypy passed, and frontend lint, typecheck, 64 tests and production build passed. All local services and the API readiness check are healthy after deployment. Browser visual review remains for the user. See `docs/learning/12-candidate-gaps.md`.
+
+
+## Literature matrix slice — 21 October 2026
+
+The next phase adds an owner-scoped, user-authored evidence matrix. Each populated research question, method, sample, finding, or limitation field requires a current eligible source chunk from the selected paper. The backend persists a separate source-linked cell for each field, rejects duplicate fields and mismatched documents, and uses row revisions to protect concurrent edits. Rows can be soft-removed; archived projects remain readable. The UI is a real comparison table with a per-page source picker and version-checked PDF links. The new migration is 0008. The isolated backend suite passed 121 tests; Ruff and strict mypy passed. Frontend lint, typecheck, 63 tests and production build passed. Local API, database, dispatcher, worker and web are healthy; the API readiness check succeeds and the matrix route serves. No browser visual acceptance has been completed. See `docs/learning/11-literature-matrix.md`.
+
+
+## Cited Research Chat preview — 20 October 2026
+
+The next vertical slice now has a project-linked Research Chat page and a server-side answer endpoint. It retrieves at most eight current, owner-scoped evidence chunks from selected indexed papers and uses a separately configurable Google answer model to produce short statements with source IDs. The server rejects unknown citations, links each statement to an excerpt and original PDF location, and returns an explicit insufficient-evidence state. The feature is disabled by default because no Google key is configured. Provider output and real semantic quality have not been live-tested. The chat is single-turn and does not persist history; source IDs validate provenance but cannot prove a generated claim is true. See `docs/learning/10-cited-research-chat.md`.
+
+Verification: 119 isolated backend tests, Ruff and strict mypy passed; 62 frontend tests, lint, typecheck and production build passed. Local API, web, dispatcher and worker are healthy after rebuilding. Existing application data and volumes were preserved. Browser interaction and a real Google call remain unverified.
+
+
+## Continued categorical table fix — 20 October 2026
+
+Reader v21 recognizes measured continued tables with up to eight numbered data columns and categorical Yes/No cells. The user's page 22 had previously been one oversized readable passage; its quality gate correctly withheld the unstructured page from retrieval. The new parser produces an 8-column source table with five separate rows and keeps Notes outside the table. A synthetic PDF regression and the original read-only PDF verified the result. The affected uploaded paper was refreshed in place: page 22 is now checked, has six table rows including its header, and has five current-version row chunks. Old derived evidence remains versioned and is not used by current-version indexing. Other stored papers with old layouts need an explicit reader update when used.
+
+## Evidence search UI checkpoint — 20 October 2026
+
+The project now links to a real source-scoped evidence search page. It displays provider availability, all project papers and their current index state, explicitly starts eligible indexing, lets researchers select ready papers, and shows ranked passages with version-checked original-PDF links. Prose and caption results use their exact anchors; table rows link to the page for verification. It deliberately does not present retrieved text as an AI-written answer. Hosted search remains disabled until a server-side Google key is configured; no live provider request or visual browser acceptance has been completed. The checked OpenAPI contract and frontend types were regenerated. Backend 114 tests, frontend 62 tests, Ruff, strict mypy, frontend lint/typecheck and build passed. Next: configure/evaluate real embeddings with reviewed questions, then add cited Research Chat and insufficient-evidence handling.
+
+## Embedding search checkpoint — 20 October 2026
+
+Versioned Google Embedding 2 indexing and owned, selected-paper vector search are implemented behind an opt-in server-side key. Migration 0007 is applied additively; the local stack is healthy. Source chunks are sent in bounded worker batches only after a researcher explicitly requests an index. Search returns ranked, page-linked evidence with source IDs and distances, not generated answers. Provider calls and actual semantic retrieval quality remain unverified because no Google key is configured. The existing 113 backend tests pass, including a fake-provider end-to-end vector search; Ruff and strict mypy pass. See `docs/learning/09-embedding-search.md`. Next: integrate an evidence UI and cited Research Chat, evaluate real-vector retrieval on reviewed papers, and design failed-index retry/recovery. Existing deferred password recovery, project edit conflict reconciliation, and removal retention/purge remain open.
+
+## Retrieval baseline checkpoint — 20 October 2026
+
+An offline evaluation now pins seven reviewed questions to the supplied paper's exact checksum and measures whether eligible chunks contain their answers and where a deterministic lexical search ranks them. Reader v20 removes clearly smaller first-page publication notices from research evidence while retaining them in readable/raw source views. Chunker v11 adds a unique nearby table caption to each row's search text. The local 41-page sample produced 373 eligible chunks; all seven reviewed answers were present and all seven appeared in the top five (six first, one second). The earlier baseline was 375 chunks and six top-five hits. This run used bundled pdfplumber 0.11.9 while the backend image pins 0.11.10; repeat the evaluation in the backend image before calling it a production-parser score. See `docs/learning/08-retrieval-evaluation.md` for commands and limits. Google embeddings, vector retrieval, Research Chat and answer generation remain unimplemented. Existing uploads need an explicit reader update for these versioned changes.
+
+Updated: 20 October 2026. Branch: feat/source-reader. The tested Vite/identity foundation is checkpointed in local Git. No remote/PR or public deployment exists.
 
 ## Working local application
 
@@ -180,3 +237,23 @@ Verification: 102 backend tests, 56 frontend tests and 23 real-PDF synthetic lay
 
 
 Figure preview association fix: figure captions above or below a nearby embedded image can now receive a focused crop, provided the nearest image match is unambiguous. Ambiguous/vector-only figures retain the full-page fallback. Existing documents need reader update once.
+
+## General PDF extraction safeguards and continued tables — 19 October 2026
+
+Reader v18 adds a layout-based continued-table detector for numbered columns and aligned numeric rows. It preserves repeated headers and row labels in each row chunk; notes remain separate prose. The detector is paper-independent. Quality assessment v2 now recognizes a validated table whose measured bounds include or immediately follow its caption, so supported continued tables do not spuriously suppress nearby prose. Uncertain/inconsistent table structure is still flagged and its table rows are withheld from retrieval.
+
+The reader toolbar includes a validated physical-page jump. Original PDF bytes and raw extracted text remain authoritative and unchanged; readable layouts and chunks are derived, deterministic and versioned. New uploads use the current parser. Existing extracted documents need the explicit reader update before current assessment/chunks are available. No embeddings, vector retrieval or model calls are introduced here.
+
+This is safer general PDF processing, not a promise to understand every PDF. Scans still need OCR; complex multi-column reading order, unusual tables, equations, handwriting and font-encoded glyphs can remain uncertain. Automatic checks detect known integrity/layout risks but cannot certify meaning or numerical accuracy. When unsure, preserve the source, report the limitation and withhold only affected evidence rather than silently guessing.
+
+Verification: 105 backend integration/corpus tests and 59 frontend tests pass; backend Ruff/strict mypy, frontend lint/types and production build pass. The 24-case synthetic PDF suite includes the generic continued-numbered-table adapter. The supplied McElheran PDF physical page 15 now has a 5-column continued table and two correctly labelled retrieval rows; the old unstructured-table prose block is removed while link warnings can still keep the page in “Needs review.” No user originals or application volumes were deleted.
+
+Read `docs/learning/07-general-pdf-extraction.md` for the pipeline, tradeoffs, versioning, testing strategy and page-number convention.
+
+## Grouped regression-table extraction — 19 October 2026
+
+Reader v19 adds a reusable detector for numbered regression model columns with multi-line/grouped headings. It maps cells by measured column starts, preserves blank estimates, joins separate parenthesized standard-error lines to each coefficient, excludes page-edge publisher text from labels, and stops when content inside numeric columns no longer matches the expected structure. Chunker source-types-v10 places each table row, its label and its model headings together; the reader marks model headings as accessible column headers.
+
+The supplied McElheran paper's physical page 21 (printed page 395) now yields 18 data rows by seven model columns. The “Full owner and revenue sample” heading is complete, coefficient and standard-error pairs remain together, missing estimates remain blank, and the page passes structural checks with 18 row chunks. A synthetic PDF test covers split errors, missing cells, offset grouped headings and publisher text sharing a row baseline.
+
+Verification: all 107 backend tests, Ruff and strict mypy pass; all 60 frontend tests, lint, type check and production build pass. The generated extraction report covers 25 synthetic layouts. This is generalization across tested layout patterns, not a guarantee for every PDF; scanned pages, unusual model headers and ambiguous alignment still require review. Existing uploads need the explicit reader update to use v19. Source files and application data were preserved.

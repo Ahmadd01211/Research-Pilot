@@ -6,7 +6,7 @@ import re
 from typing import Any
 
 CAPTION = re.compile(
-    r"^(?:(?:FIGURE|FIG\.?)\s+([A-Z]?\d+[a-z]?)\b|(?:Figure|Fig\.)\s+([A-Z]?\d+[a-z]?)[.:])"
+    r"^(?:FIGURE|FIG\.?|Figure|Fig\.)\s+([A-Z]?\d+[a-z]?)\b(?:[.:]|(?=\s+[A-Z]))",
 )
 
 
@@ -27,8 +27,24 @@ def figures_on_page(
             lines[-1].append(i)
         else:
             lines.append([i])
+    split_lines: list[list[int]] = []
     for line in lines:
         line.sort(key=lambda i: words[i]["box"][0])
+        local: list[int] = []
+        for index in line:
+            if local and words[index]["box"][0] - words[local[-1]]["box"][2] > 0.08:
+                split_lines.append(local)
+                local = []
+            local.append(index)
+        if local:
+            split_lines.append(local)
+    lines = sorted(
+        split_lines,
+        key=lambda line: (
+            min(words[i]["box"][1] for i in line),
+            min(words[i]["box"][0] for i in line),
+        ),
+    )
     captions: list[dict[str, Any]] = []
     for n, line in enumerate(lines):
         text = " ".join(words[i]["text"] for i in line)
@@ -39,7 +55,17 @@ def figures_on_page(
         last = max(words[i]["box"][3] for i in line)
         for following in lines[n + 1 :]:
             first = min(words[i]["box"][1] for i in following)
+            selected_left = min(words[i]["box"][0] for i in selected)
+            selected_right = max(words[i]["box"][2] for i in selected)
+            following_left = min(words[i]["box"][0] for i in following)
+            following_right = max(words[i]["box"][2] for i in following)
             next_text = " ".join(words[i]["text"] for i in following)
+            same_column = (
+                min(selected_right, following_right) - max(selected_left, following_left) > 0.02
+                or abs(selected_left - following_left) < 0.05
+            )
+            if not same_column:
+                continue
             if (
                 (first - last) * height > 6
                 or CAPTION.match(next_text)
@@ -53,7 +79,7 @@ def figures_on_page(
             last = max(words[i]["box"][3] for i in following)
         captions.append(
             {
-                "label": "Figure " + (match.group(1) or match.group(2)),
+                "label": "Figure " + match.group(1),
                 "caption": " ".join(words[i]["text"] for i in selected),
                 "caption_word_indices": selected,
                 "box": None,
@@ -88,6 +114,30 @@ def figures_on_page(
         images.append(box)
         if len(images) >= 12:
             break
+
+    # Vector diagrams are stored as drawing commands rather than images. Keep
+    # their measured geometry so a caption can be associated with a local
+    # shape cluster and previewed as a crop instead of as the complete page.
+    vector_boxes: list[list[float]] = []
+    for collection in ("rects", "lines", "curves"):
+        for shape in getattr(view, collection, []):
+            if not all(key in shape for key in ("x0", "x1", "top", "bottom")):
+                continue
+            box = [
+                max(0.0, (shape["x0"] - left) / width),
+                max(0.0, (shape["top"] - top) / height),
+                min(1.0, (shape["x1"] - left) / width),
+                min(1.0, (shape["bottom"] - top) / height),
+            ]
+            if box[0] >= box[2] or box[1] > box[3]:
+                continue
+            if box[2] - box[0] > 0.8 or box[3] - box[1] > 0.5:
+                continue  # Page frames and decorative rules are not figures.
+            vector_boxes.append(box)
+            if len(vector_boxes) >= 500:
+                break
+        if len(vector_boxes) >= 500:
+            break
     used = set()
     for caption in captions:
         caption_top = min(words[i]["box"][1] for i in caption["caption_word_indices"])
@@ -114,6 +164,57 @@ def figures_on_page(
             caption["box"] = box
             caption["detection"] = "embedded_image"
             used.add(j)
+        else:
+            caption_left = min(words[i]["box"][0] for i in caption["caption_word_indices"])
+            caption_right = max(words[i]["box"][2] for i in caption["caption_word_indices"])
+            visual_regions = [
+                ("image", j, box) for j, box in enumerate(images) if j not in used
+            ] + [("vector", j, box) for j, box in enumerate(vector_boxes)]
+            measured = []
+            for kind, index, box in visual_regions:
+                if box[3] <= caption_top:
+                    side, distance = "above", caption_top - box[3]
+                elif box[1] >= caption_bottom:
+                    side, distance = "below", box[1] - caption_bottom
+                else:
+                    side, distance = "overlap", 0.0
+                horizontally_near = not (
+                    box[2] < caption_left - 0.18 or box[0] > caption_right + 0.18
+                )
+                if distance < 0.3 and horizontally_near:
+                    measured.append((distance, side, kind, index, box))
+            measured.sort(key=lambda item: item[0])
+            nearby: list[tuple[float, str, str, int, list[float]]] = []
+            if measured:
+                nearest, preferred_side = measured[0][0], measured[0][1]
+                nearby = [
+                    item
+                    for item in measured
+                    if item[1] == preferred_side and item[0] <= nearest + 0.09
+                ]
+            enough_geometry = bool(nearby) and (
+                any(item[2] == "image" for item in nearby) or len(nearby) >= 2
+            )
+            if enough_geometry:
+                boxes = [item[4] for item in nearby]
+                union = [
+                    min(box[0] for box in boxes),
+                    min(box[1] for box in boxes),
+                    max(box[2] for box in boxes),
+                    max(box[3] for box in boxes),
+                ]
+                if union[2] - union[0] >= 0.1 and union[3] - union[1] >= 0.04:
+                    caption["box"] = [
+                        max(0.0, union[0] - 0.02),
+                        max(0.0, union[1] - 0.03),
+                        min(1.0, union[2] + 0.02),
+                        min(1.0, union[3] + 0.03),
+                    ]
+                    image_indices = {item[3] for item in nearby if item[2] == "image"}
+                    caption["detection"] = (
+                        "embedded_image" if image_indices else "vector_graphics"
+                    )
+                    used.update(image_indices)
     for j, box in enumerate(images):
         if j not in used:
             captions.append(

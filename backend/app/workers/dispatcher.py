@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import get_settings
+from app.modules.documents.indexing import dispatch_once as dispatch_embeddings
 from app.modules.documents.processing import dispatch_once
 from app.workers.celery_app import celery_app
 
@@ -26,6 +27,12 @@ def publish(document_id: str) -> None:
     )
 
 
+def publish_embedding(index_id: str) -> None:
+    celery_app.send_task(
+        "researchpilot.embeddings.index", args=[index_id], queue="embeddings", retry=False
+    )
+
+
 def main() -> None:
     settings = get_settings()
     engine = create_engine(
@@ -38,6 +45,8 @@ def main() -> None:
         while not stopping:
             try:
                 dispatch_once(factory, publish)
+                if settings.embedding_enabled:
+                    dispatch_embeddings(factory, publish_embedding)
                 # Operational heartbeat, no source text or user identifiers.
                 with engine.begin() as connection:
                     connection.execute(

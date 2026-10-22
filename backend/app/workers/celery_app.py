@@ -6,7 +6,7 @@ settings = get_settings()
 celery_app = Celery(
     "researchpilot_greenfield",
     broker=settings.redis_url.get_secret_value(),
-    include=["app.workers.document_tasks"],
+    include=["app.workers.document_tasks", "app.workers.embedding_tasks"],
 )
 celery_app.conf.update(
     task_serializer="json",

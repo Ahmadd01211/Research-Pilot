@@ -7,6 +7,10 @@ x-backend: &backend
     RP_REDIS_URL: redis://redis:6379/0
     RP_PUBLIC_ORIGIN: http://localhost:3100
     RP_ENVIRONMENT: development
+    RP_EMBEDDING_ENABLED: ${RP_EMBEDDING_ENABLED:-false}
+    RP_ANSWER_ENABLED: ${RP_ANSWER_ENABLED:-false}
+    RP_ANSWER_MODEL: ${RP_ANSWER_MODEL:-gemini-3.8-flash}
+    RP_GOOGLE_API_KEY: ${RP_GOOGLE_API_KEY:-}
   init: true
   security_opt: [no-new-privileges:true]
 services:

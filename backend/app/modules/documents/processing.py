@@ -9,6 +9,8 @@ from sqlalchemy import delete, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.core.config import Settings
+from app.modules.documents import indexing
 from app.modules.documents.chunks import make_chunks
 from app.modules.documents.extraction import EXTRACTOR_VERSION, TRANSIENT, extract_with_layout
 from app.modules.documents.models import Document, DocumentJob, DocumentPageText, EvidenceChunk
@@ -104,6 +106,7 @@ def finish(
     pages: list[str] | None,
     error: str | None,
     layouts: list[dict[str, object]] | None = None,
+    settings: Settings | None = None,
 ) -> bool:
     with factory() as db:
         document = db.get(Document, document_id)
@@ -161,6 +164,8 @@ def finish(
             projects.record(
                 db, project, "paper_extracted", "PDF text extracted with page provenance", []
             )
+            if settings is not None and not project.archived_at:
+                indexing.queue_after_extraction(db, document, settings)
         else:
             job.state = "failed"
             job.error_code = "worker_failure"
@@ -168,13 +173,16 @@ def finish(
         return True
 
 
-def run_document(factory: sessionmaker[Session], storage: LocalStorage, document_id: UUID) -> None:
+def run_document(
+    factory: sessionmaker[Session], storage: LocalStorage, document_id: UUID,
+    settings: Settings | None = None,
+) -> None:
     claimed = claim(factory, document_id)
     if claimed is None:
         return
     token, source_hash = claimed
     pages, layouts, error = extract_with_layout(storage.path(document_id), source_hash)
-    finish(factory, document_id, token, pages, error, layouts)
+    finish(factory, document_id, token, pages, error, layouts, settings)
 
 
 def retry(db: Session, owner: UUID, project_id: UUID, document_id: UUID) -> Document:

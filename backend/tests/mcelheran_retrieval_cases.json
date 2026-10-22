@@ -1,0 +1,54 @@
+{
+  "source_sha256": "d2a5a863b3862fd8f941de89d87eba0a43857adc29b476bd03ddcc7a408c0227",
+  "cases": [
+    {
+      "id": "early_firm_adoption",
+      "question": "What share of US firms used any of the five AI technologies in the 2018 survey?",
+      "page_number": 1,
+      "kind": "prose",
+      "contains_all": ["fewer than 6%", "firms"]
+    },
+    {
+      "id": "machine_learning_definition",
+      "question": "How does Table 2 define machine learning?",
+      "page_number": 8,
+      "kind": "table_row",
+      "contains_all": ["Machine learning", "predictive performance"]
+    },
+    {
+      "id": "figure_one_subject",
+      "question": "What does Figure 1 show about AI-related technologies in the United States?",
+      "page_number": 9,
+      "kind": "figure_caption",
+      "contains_all": ["FIGURE 1", "Prevalence of AI"]
+    },
+    {
+      "id": "employment_weighted_any_ai",
+      "question": "What is the employment-weighted usage rate of any AI technology?",
+      "page_number": 9,
+      "kind": "prose",
+      "contains_all": ["employment", "18.2%"]
+    },
+    {
+      "id": "table_seven_vc_coefficient",
+      "question": "In Table 7, what is the venture capital coefficient in model 3?",
+      "page_number": 21,
+      "kind": "table_row",
+      "contains_all": ["Funded by venture capital", "0.1071"]
+    },
+    {
+      "id": "startup_vc_rate",
+      "question": "In Table A3, what AI usage rate is reported for startups funded by VC?",
+      "page_number": 34,
+      "kind": "table_row",
+      "contains_all": ["Funded by VC", "18.8", "5.9"]
+    },
+    {
+      "id": "advanced_degree_startup_rate",
+      "question": "In Table A3, how do AI usage rates compare for owners with and without an advanced degree?",
+      "page_number": 34,
+      "kind": "table_row",
+      "contains_all": ["Hold advanced degree", "8.4", "5.3"]
+    }
+  ]
+}

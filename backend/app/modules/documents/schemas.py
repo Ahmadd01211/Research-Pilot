@@ -31,6 +31,14 @@ class ReadablePassage(BaseModel):
         "affiliations",
         "correspondence",
         "funding",
+        "acknowledgments",
+        "data_availability",
+        "orcid",
+        "author_contributions",
+        "conflict_of_interest",
+        "ethics_statement",
+        "endnotes",
+        "references",
     ] = "body"
     id: str
     text: str
@@ -55,7 +63,7 @@ class SourceFigure(BaseModel):
     caption: str | None
     caption_word_indices: list[int]
     box: tuple[float, float, float, float] | None
-    detection: Literal["embedded_image", "source_page"]
+    detection: Literal["embedded_image", "vector_graphics", "source_page"]
     related_passages: list[FigureDiscussion]
 
 
@@ -100,12 +108,14 @@ class PageQuality(BaseModel):
     eligible_units: int
     withheld_passages: int
     link_count: int
+    hybrid: dict[str, object] = Field(default_factory=dict)
 
 
 class QualityPageSummary(BaseModel):
     page_number: int
     state: Literal["checked", "needs_review", "blocked", "not_assessed"]
     findings: list[QualityFinding] = Field(default_factory=list)
+    hybrid: dict[str, object] = Field(default_factory=dict)
 
 
 class DocumentQuality(BaseModel):

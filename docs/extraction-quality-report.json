@@ -10,7 +10,31 @@
       "words": 67,
       "tables": 1,
       "figures": 0,
-      "chunks": 9,
+      "chunks": 8,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "continued-numeric-table",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
+      "words": 41,
+      "tables": 1,
+      "figures": 0,
+      "chunks": 4,
+      "limitations": []
+    },
+    {
+      "status": "passed",
+      "case": "regression-multiheader-table",
+      "assessment": "checked",
+      "quality_findings": [],
+      "links": 0,
+      "words": 65,
+      "tables": 1,
+      "figures": 0,
+      "chunks": 8,
       "limitations": []
     },
     {
@@ -108,7 +132,7 @@
       "words": 42,
       "tables": 1,
       "figures": 0,
-      "chunks": 7,
+      "chunks": 6,
       "limitations": []
     },
     {
@@ -120,7 +144,7 @@
       "words": 40,
       "tables": 1,
       "figures": 0,
-      "chunks": 7,
+      "chunks": 6,
       "limitations": []
     },
     {
@@ -132,21 +156,22 @@
       "words": 42,
       "tables": 1,
       "figures": 0,
-      "chunks": 7,
+      "chunks": 6,
       "limitations": []
     },
     {
       "status": "passed",
       "case": "ambiguous-grouped-table",
-      "assessment": "needs_review",
+      "assessment": "blocked",
       "quality_findings": [
-        "uncertain_table"
+        "uncertain_table",
+        "unstructured_table"
       ],
       "links": 0,
       "words": 42,
       "tables": 1,
       "figures": 0,
-      "chunks": 1,
+      "chunks": 0,
       "limitations": [
         "crossing subcolumn gutter; table withheld from retrieval"
       ]
@@ -266,7 +291,7 @@
       "words": 80,
       "tables": 1,
       "figures": 0,
-      "chunks": 10,
+      "chunks": 9,
       "limitations": []
     },
     {
@@ -278,21 +303,22 @@
       "words": 57,
       "tables": 1,
       "figures": 0,
-      "chunks": 11,
+      "chunks": 10,
       "limitations": []
     },
     {
       "status": "passed",
       "case": "ambiguous-sectioned-numeric",
-      "assessment": "needs_review",
+      "assessment": "blocked",
       "quality_findings": [
-        "uncertain_table"
+        "uncertain_table",
+        "unstructured_table"
       ],
       "links": 0,
       "words": 57,
       "tables": 1,
       "figures": 0,
-      "chunks": 4,
+      "chunks": 0,
       "limitations": [
         "uncertain numeric alignment; table withheld from retrieval"
       ]

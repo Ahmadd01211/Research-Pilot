@@ -1,0 +1,11 @@
+# Reference Manager: checked metadata before citation output
+
+This phase stores researcher-verified bibliographic records under a project. `ReferenceRecord` holds title, authors, publication type, year, container, normalized DOI, optional URL and an optional link to an uploaded PDF. The PDF remains the evidence source; the reference record describes its publication. We do not silently turn noisy extracted text into citation metadata.
+
+The FastAPI service checks project ownership before reading or writing. Writes lock the project, reject edits to archived projects, and compare the submitted revision with the current record. That prevents a stale browser tab from overwriting a newer edit. Removal is soft: the reference disappears from the active list while its row remains for future lifecycle work. This is not a retention policy or restore feature.
+
+DOIs are normalized from common URL and `doi:` forms and have a per-project unique index for active records. Exact DOI duplicates are blocked. The UI queries normalized title and year matches and asks the researcher to review them; a title match is only a warning because different works can share similar titles. This approach avoids silently merging distinct publications, at the cost of manual review. The record limit is 500 per project and the active list is bounded to that same size.
+
+Project citation style is stored with its own revision. The choices are APA 7, MLA 9 and Chicago 18. The setting is durable, but formatting and export are later work: selecting a style does not yet generate a formatted bibliography. Editions were checked against the [APA Style guidance](https://apastyle.apa.org/style-grammar-guidelines), [MLA handbook](https://style.mla.org/mla-handbook-ninth-edition/) and [Chicago manual](https://www.chicagomanualofstyle.org/cmos18/).
+
+To review: open a project, choose **References**, add a record, link an uploaded PDF if appropriate, then try an exact repeated DOI and a similar title. Change the project style and reload the page. The exact DOI should be rejected, a title match should warn, and the style should persist. Editing and removal require the latest revision. The isolated integration tests exercise those boundaries; actual publisher metadata lookup and citation formatting remain unimplemented.

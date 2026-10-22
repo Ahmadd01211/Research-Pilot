@@ -7,6 +7,9 @@ from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject, Num
 
 CASES = [
     "numbered-section-numeric",
+    "continued-numeric-table",
+    "continued-categorical-table",
+    "regression-multiheader-table",
     "prose",
     "two-columns",
     "crop",
@@ -29,6 +32,7 @@ CASES = [
     "summary-table",
     "sectioned-numeric",
     "ambiguous-sectioned-numeric",
+    "back-matter",
 ]
 
 
@@ -71,6 +75,68 @@ def corpus_pdf(case):
             for col, x in enumerate([280, 350, 420, 510], 1):
                 text(f"{n}.{col}", x, y, 8)
         text("Notes: Source notes remain outside the table.", 50, 465)
+    elif case == "continued-numeric-table":
+        text("TABLE 5 (Continued)", 50, 740)
+        rect(50, 699, 510, 25)
+        for n, (label, x) in enumerate(
+            [("Full sample", 270), ("Use AI", 350), ("Do not use AI", 420), ("Difference", 510)], 1
+        ):
+            text(f"({n})", x, 721, 8)
+            text(label, x, 704, 8)
+        text("In medium-sized CBSA (<1,000,000)", 50, 690)
+        for x, value in zip([270, 350, 420, 510], ["17.8", "17.1", "17.8", "-0.7"], strict=True):
+            text(value, x, 690, 8)
+        text("In large-sized CBSA (1,000,000+)", 50, 673)
+        for x, value in zip([270, 350, 420, 510], ["50.3", "55.1", "49.9", "5.2"], strict=True):
+            text(value, x, 673, 8)
+        text("Notes: Continuation notes remain outside the two data rows.", 50, 640)
+    elif case == "continued-categorical-table":
+        text("TABLE 7 (Continued)", 50, 740)
+        xs = [215, 265, 315, 365, 415, 465, 515]
+        for n, x in enumerate(xs, 1):
+            text(f"({n})", x, 721, 8)
+            text("Use AI", x, 704, 8)
+        text("Description", 50, 704, 8)
+        text("State-by-industry controls", 50, 680)
+        for x in xs:
+            text("Yes", x, 680, 8)
+        text("Observations (rounded)", 50, 658)
+        for x, value in zip(xs, ["75,000"] * 6 + ["209,000"], strict=True):
+            text(value, x, 658, 8)
+        text("Notes: These notes are not a table row.", 50, 630)
+    elif case == "regression-multiheader-table":
+        text("TABLE 9 Adoption outcomes across owner groups.", 50, 750)
+        rect(50, 674, 510, 55)
+        starts = [230, 320, 410, 500]
+        for n, x in enumerate(starts, 1):
+            text(f"({n})", x, 715, 8)
+        for label, x in zip(["All", "AI", "NonAI", "Difference"], starts, strict=True):
+            text(label, x, 700, 8)
+        for label, x in zip(["firms", "users", "users", "overall"], starts[:3] + [520], strict=True):
+            text(label, x, 685, 8)
+        text("Outcome", 55, 685, 8)
+        data = [
+            ("Revenue growth", ["0.11***", "0.08**", "0.02", "0.09***"], ["(0.02)", "(0.03)", "(0.02)", "(0.02)"]),
+            ("Advanced degree (1/0)", ["0.04***", "", "0.01", "0.02*"], ["(0.01)", "", "(0.01)", "(0.01)"]),
+            ("Owner age", ["", "0.03", "0.01", "-0.01"], ["", "(0.02)", "(0.02)", "(0.01)"]),
+            ("Product innovation", ["0.05**", "0.07***", "0.03*", "0.06***"], ["(0.02)", "(0.02)", "(0.02)", "(0.02)"]),
+        ]
+        y = 655
+        # Simulate publisher running matter whose extracted y-coordinate
+        # overlaps a real row but lies outside the page's text content box.
+        text("publisher", 580, y, 6)
+        for label, coefficients, errors in data:
+            text(label, 55, y)
+            for x, value in zip(starts, coefficients, strict=True):
+                if value:
+                    text(value, x, y, 8)
+            y -= 14
+            for x, error in zip(starts, errors, strict=True):
+                if error:
+                    text(error, x, y, 8)
+            y -= 38
+        text("(Continues)", 500, y)
+        text("Notes: Standard errors are in parentheses.", 50, y - 22)
     elif case in {"front-matter", "front-matter-unanchored"}:
         text("Received: 1 January 2026", 55, 760, 8)
         text("DOI: 10.0000/synthetic", 55, 745, 8)
@@ -99,6 +165,23 @@ def corpus_pdf(case):
             14 if case == "section-heading" else 10,
         )
         text("The next paragraph explains this section with traceable source evidence.", 55, 648)
+    elif case == "back-matter":
+        text("The conclusion reports a source-based result.", 55, 740)
+        text("ACKNOWLEDGMENTS", 55, 705, 12)
+        text("Colleagues offered comments and assistance.", 55, 683)
+        text("DATA AVAILABILITY STATEMENT", 55, 648, 12)
+        text("Approved researchers can access confidential survey data.", 55, 626)
+        text("ORCID", 55, 591, 12)
+        text("Alice Example https://orcid.org/0000-0000-0000-0000", 55, 569)
+        text("ENDNOTES", 55, 534, 12)
+        text("1", 55, 510, 7)
+        text("The first note describes the survey response rate.", 67, 508)
+        text("2", 55, 480, 7)
+        text("The second note qualifies the source population.", 67, 478)
+        text("REFERENCES", 55, 440, 12)
+        text("Example A. Source publication title.", 55, 418)
+        text("APPENDIX A: ADDITIONAL RESULTS", 55, 375, 12)
+        text("The appendix reports another measured result.", 55, 353)
     elif case == "summary-table":
         text("The preceding paragraph must remain separate from the table.", 50, 635)
         text("TABLE 1 Summary by sample.", 50, 615)
