@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from '../src/app/router';
 
@@ -23,7 +23,8 @@ it('inserts a verified reference marker and saves researcher text as the next re
   });
   vi.stubGlobal('fetch', mock);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/projects/${projectId}/writing/${draftId}`]}><AppRoutes/></MemoryRouter></QueryClientProvider>);
+  const router = createMemoryRouter([{ path: '*', element: <AppRoutes/> }], { initialEntries: [`/projects/${projectId}/writing/${draftId}`] });
+  render(<QueryClientProvider client={client}><RouterProvider router={router}/></QueryClientProvider>);
   const ui = userEvent.setup();
   await ui.click(await screen.findByRole('button', { name: 'Insert citation' }));
   await ui.click(screen.getByRole('button', { name: 'Save new version' }));

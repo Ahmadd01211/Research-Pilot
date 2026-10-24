@@ -1,5 +1,9 @@
 # ResearchPilot project status
 
+## Draft protection - 25 October 2026
+
+Unsaved writing now survives query refreshes and failed saves. In-app navigation and Back/Forward require an explicit discard choice; reload/close request the browser warning. Conflicts show local and current server text with explicit choices; keeping local text requires a separate revision-checked save. Typing during a save is retained. No browser draft storage or crash recovery is claimed. The app entry point uses React Router's data router around existing routes. Frontend 80 tests, lint, typecheck and build passed (existing bundle-size warning). No API, migration or runtime configuration changes. Work is isolated on feat/draft-protection from 9d4210a; shared runtime is unchanged. See docs/learning/14-writing-drafts.md.
+
 ## Direct evidence and writing navigation - 24 October 2026
 
 The dashboard and sidebar now open Evidence and Writing without visiting a project overview first. With one active project, the action opens that project directly; with several, a short project chooser shows the matching destination. Project cards also link straight to both tasks, and the current-project sidebar keeps them reachable while working. No API or ownership rules changed. Frontend lint, typecheck, production build and all 74 tests passed. Visual browser review remains for the user.
