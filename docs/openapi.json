@@ -1048,7 +1048,9 @@
           "kind": {
             "enum": [
               "reference_csv",
-              "draft_markdown"
+              "reference_xlsx",
+              "draft_markdown",
+              "draft_docx"
             ],
             "title": "Kind",
             "type": "string"
@@ -1122,7 +1124,9 @@
           "kind": {
             "enum": [
               "reference_csv",
-              "draft_markdown"
+              "reference_xlsx",
+              "draft_markdown",
+              "draft_docx"
             ],
             "title": "Kind",
             "type": "string"

@@ -1,6 +1,10 @@
 """Exports are immutable downloads with owner checks and spreadsheet-safe CSV."""
 
+import io
 from uuid import uuid4
+
+from docx import Document
+from openpyxl import load_workbook
 
 from tests.conftest import csrf, login, register
 from tests.test_matrix import setup_source
@@ -59,3 +63,61 @@ def test_draft_export_rejects_stale_revision_and_foreign_access(client):
     login(client, "export-other@example.com")
     assert client.get(base + "/exports").status_code == 404
     assert client.get(base + "/exports/" + item["id"] + "/download").status_code == 404
+
+
+def test_xlsx_reference_snapshot_preserves_literal_cells_and_original_bytes(client):
+    project, _ = setup_source(client)
+    base = f"/api/v1/projects/{project['id']}"
+    reference = client.post(base + "/references", headers=csrf(client), json={
+        "kind": "journal", "title": "=SUM(1,1)", "authors": ["Scholar, Ada"],
+        "year": 2024, "container_title": "Research Journal", "doi": None,
+        "url": "", "document_id": None,
+    })
+    assert reference.status_code == 201, reference.text
+    payload = {"kind": "reference_xlsx", "request_id": str(uuid4())}
+    created = client.post(base + "/exports", headers=csrf(client), json=payload)
+    assert created.status_code == 201, created.text
+    item = created.json()
+    assert item["filename"].endswith(".xlsx")
+    downloaded = client.get(base + "/exports/" + item["id"] + "/download")
+    assert downloaded.status_code == 200
+    sheet = load_workbook(io.BytesIO(downloaded.content), read_only=False).active
+    assert sheet["B2"].value == "=SUM(1,1)"
+    assert sheet["B2"].data_type == "s"
+    assert sheet["D2"].value == 2024
+    assert sheet.freeze_panes == "A2"
+    assert client.post(base + "/exports", headers=csrf(client), json=payload).json()["id"] == item["id"]
+    assert client.put(base + "/references/" + reference.json()["id"], headers=csrf(client), json={
+        "kind": "journal", "title": "Updated", "authors": ["Scholar, Ada"],
+        "year": 2024, "container_title": "Research Journal", "doi": None,
+        "url": "", "document_id": None, "expected_revision": 1,
+    }).status_code == 200
+    assert client.get(base + "/exports/" + item["id"] + "/download").content == downloaded.content
+
+
+def test_docx_draft_snapshot_is_readable_and_revision_checked(client):
+    project, _ = setup_source(client)
+    base = f"/api/v1/projects/{project['id']}"
+    draft = client.post(base + "/drafts", headers=csrf(client), json={
+        "title": "Review", "body": "# Introduction\nResearcher text.",
+    }).json()
+    payload = {"kind": "draft_docx", "request_id": str(uuid4()),
+               "draft_id": draft["id"], "expected_revision": 1}
+    created = client.post(base + "/exports", headers=csrf(client), json=payload)
+    assert created.status_code == 201, created.text
+    item = created.json()
+    assert item["filename"].endswith(".docx")
+    downloaded = client.get(base + "/exports/" + item["id"] + "/download")
+    assert downloaded.status_code == 200
+    document = Document(io.BytesIO(downloaded.content))
+    assert [paragraph.text for paragraph in document.paragraphs] == [
+        "Review", "Introduction", "Researcher text.",
+    ]
+    assert document.paragraphs[1].style.name == "Heading 1"
+    assert client.put(base + "/drafts/" + draft["id"], headers=csrf(client), json={
+        "title": "Updated", "body": "New body", "expected_revision": 1,
+    }).status_code == 200
+    assert client.post(base + "/exports", headers=csrf(client), json={
+        **payload, "request_id": str(uuid4()),
+    }).status_code == 409
+    assert client.get(base + "/exports/" + item["id"] + "/download").content == downloaded.content

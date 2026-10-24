@@ -1,5 +1,9 @@
 # ResearchPilot project status
 
+## Editable export snapshots - 24 October 2026
+
+Exports now include owner-scoped XLSX reference records and DOCX writing drafts alongside CSV and Markdown. Migration 0015 extends the export-kind constraint; the same request idempotency, draft revision checks, immutable download history, 2 MB file limit and 100 MB project limit apply. Excel metadata is stored as literal cells, including formula-looking titles. Word headings are basic and other Markdown or citation markers stay literal. The isolated backend suite passed 151 tests; Ruff and strict mypy passed. Frontend 70 tests, lint, typecheck and build passed. Browser visual acceptance and public-release export retention remain open. See `docs/learning/15-export-snapshots.md`.
+
 ## Persistent Research Chat - 22 October 2026
 
 Research Chat supports project-owned saved threads and multi-turn follow-ups. Each turn preserves selected paper IDs, cited source text, physical PDF page, source hash, reader version and model response, so later reprocessing does not rewrite the citation history. Up to six prior turns are provided as untrusted context; new claims must cite freshly retrieved evidence. Migration 0014 is applied, generated API types are current, and the local stack is healthy. Frontend production build, Ruff and strict mypy pass. Live provider quality remains unverified until embeddings and answers are configured. Budgets, metering and thread retention controls remain future work. See `docs/learning/16-persistent-research-chat.md`.

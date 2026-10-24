@@ -1246,7 +1246,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "reference_csv" | "draft_markdown";
+            kind: "reference_csv" | "reference_xlsx" | "draft_markdown" | "draft_docx";
             /**
              * Request Id
              * Format: uuid
@@ -1282,7 +1282,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "reference_csv" | "draft_markdown";
+            kind: "reference_csv" | "reference_xlsx" | "draft_markdown" | "draft_docx";
             /** Sha256 */
             sha256: string;
         };
