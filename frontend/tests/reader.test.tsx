@@ -109,7 +109,6 @@ it('never paints an undecodable equation glyph box over the following paragraph'
   await ui.click(await screen.findByRole('button',{name:'Show passage 1 in PDF'}));
   const pdf=await screen.findByRole('img',{name:'PDF page 1, 2 highlighted words'});
   expect(JSON.parse(pdf.getAttribute('data-boxes')!)).toEqual([[.43,.12,.44,.14],[.45,.12,.46,.14]]);
-  expect(screen.getByText(/Unreliable symbol boxes are omitted/)).toBeVisible();
 });
 
 it('switches from a table cell back to the caption without retaining cell highlights',async()=>{

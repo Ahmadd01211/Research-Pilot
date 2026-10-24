@@ -33,7 +33,7 @@ it('uploads raw PDF with CSRF, refreshes the table and explains duplicate reuse'
   const request = mock.mock.calls.find(([, init]) => init?.method === 'POST');
   expect(request?.[1]?.body).toBe(file);
   expect(request?.[1]?.headers).toEqual({ 'content-type': 'application/pdf', 'x-csrf-token': 'synthetic' });
-  expect(screen.getByText(/Eligible papers can then be indexed/)).toBeVisible();
+  expect(screen.getByText(/newly extracted papers are queued for evidence indexing automatically/)).toBeVisible();
 });
 it('blocks empty files before a network upload', async () => {
   const mock = open(); const ui = userEvent.setup();

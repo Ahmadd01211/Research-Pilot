@@ -9,18 +9,20 @@ const projectId = '11111111-1111-4111-8111-111111111111';
 const paperId = '22222222-2222-4222-8222-222222222222';
 afterEach(() => vi.unstubAllGlobals());
 
-function open(enabled: boolean) {
+function open(enabled: boolean, chat = false) {
   const mock = vi.fn((url: string, init?: RequestInit) => {
     if (url === '/api/v1/me') return Promise.resolve(Response.json({ display_name: 'Researcher', email: 'r@example.com' }));
     if (url === '/api/v1/auth/csrf') return Promise.resolve(Response.json({ csrf_token: 'synthetic' }));
-    if (url.endsWith('/evidence/capabilities')) return Promise.resolve(Response.json({ embedding_enabled: enabled }));
+    if (url.endsWith('/evidence/capabilities')) return Promise.resolve(Response.json({ embedding_enabled: enabled, answer_enabled: enabled }));
+    if (url.endsWith('/evidence/threads')) return Promise.resolve(Response.json({ items: [{ id: 'thread-one', title: 'First topic', turn_count: 0 }, { id: 'thread-two', title: 'Second topic', turn_count: 0 }] }));
+    if (url.endsWith('/evidence/threads/thread-one') || url.endsWith('/evidence/threads/thread-two')) return Promise.resolve(Response.json({ turns: [] }));
     if (url.endsWith('/evidence/indexes')) return Promise.resolve(Response.json({ items: enabled ? [{ document_id: paperId, state: 'ready', processed_chunks: 2, total_chunks: 2, error_code: null }] : [] }));
     if (url.includes('/documents?')) return Promise.resolve(Response.json({ items: [{ id: paperId, filename: 'Evidence.pdf', status: 'extracted' }], total: 1 }));
     if (url.endsWith('/evidence/search') && init?.method === 'POST') return Promise.resolve(Response.json({ model: 'gemini-embedding-2', index_format: 'gemini2-qa-v1:l2', hits: [{ chunk_id: 'chunk-1', document_id: paperId, source_sha256: 'abc', reader_version: 'reader-v1', page_number: 9, kind: 'prose', source_id: 'passage-2', text: 'Adoption varied by firm size.', source_metadata: { passage_id: 'passage-2' }, distance: 0.2 }] }));
     return Promise.resolve(Response.json({ id: projectId, title: 'AI adoption', archived_at: null }));
   });
   vi.stubGlobal('fetch', mock);
-  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}><MemoryRouter initialEntries={[`/projects/${projectId}/evidence`]}><AppRoutes/></MemoryRouter></QueryClientProvider>);
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}><MemoryRouter initialEntries={[`/projects/${projectId}/${chat ? 'chat' : 'evidence'}`]}><AppRoutes/></MemoryRouter></QueryClientProvider>);
   return mock;
 }
 
@@ -29,6 +31,16 @@ it('explains unavailable hosted search without offering indexing', async () => {
   expect(await screen.findByText(/Hosted evidence search is not configured yet/)).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Index paper' })).not.toBeInTheDocument();
   expect(await screen.findByRole('button', { name: 'Find evidence' })).toBeDisabled();
+});
+
+it('opens the first saved conversation and lets the researcher switch threads', async () => {
+  const mock = open(true, true), ui = userEvent.setup();
+  const select = await screen.findByRole('combobox', { name: 'Saved conversation' });
+  expect(select).toHaveValue('thread-one');
+  expect(mock.mock.calls.some(([url]) => url.endsWith('/evidence/threads/thread-one'))).toBe(true);
+  await ui.selectOptions(select, 'thread-two');
+  expect(select).toHaveValue('thread-two');
+  expect(mock.mock.calls.some(([url]) => url.endsWith('/evidence/threads/thread-two'))).toBe(true);
 });
 
 it('searches only selected indexed papers and links a result to the measured passage', async () => {
