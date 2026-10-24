@@ -63,3 +63,23 @@ class ReferenceSettingsUpdate(BaseModel):
 
 class DuplicateMatches(BaseModel):
     items: list[ReferenceRead]
+
+
+class BibliographySegment(BaseModel):
+    text: str
+    italic: bool
+
+
+class BibliographyEntry(BaseModel):
+    reference_id: UUID
+    text: str
+    segments: list[BibliographySegment]
+    warnings: list[str]
+
+
+class Bibliography(BaseModel):
+    style: CitationStyle
+    style_label: str
+    preview: Literal[True]
+    limitations: list[str]
+    items: list[BibliographyEntry]

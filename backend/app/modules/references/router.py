@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import current_user, database
 from app.modules.identity.models import User
-from app.modules.references import service
+from app.modules.references import formatting, service
 from app.modules.references.schemas import (
+    Bibliography,
     DuplicateMatches,
     ReferenceInput,
     ReferencePage,
@@ -38,6 +39,12 @@ def find_duplicates(project_id: UUID, title: str = Query(max_length=500),
                     exclude_id: UUID | None = None, user: User = Depends(current_user),
                     db: Session = Depends(database)) -> DuplicateMatches:
     return service.duplicates(db, user.id, project_id, title, year, exclude_id)
+
+
+@router.get("/bibliography", response_model=Bibliography)
+def read_bibliography(project_id: UUID, user: User = Depends(current_user),
+                      db: Session = Depends(database)) -> Bibliography:
+    return formatting.bibliography(db, user.id, project_id)
 
 
 @router.get("/settings", response_model=ReferenceSettingsRead)

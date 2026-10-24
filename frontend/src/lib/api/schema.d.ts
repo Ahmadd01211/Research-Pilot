@@ -697,6 +697,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/references/bibliography": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Bibliography */
+        get: operations["read_bibliography_api_v1_projects__project_id__references_bibliography_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/references/duplicates": {
         parameters: {
             query?: never;
@@ -849,6 +866,46 @@ export interface components {
         AnswerStatement: {
             /** Source Ids */
             source_ids: string[];
+            /** Text */
+            text: string;
+        };
+        /** Bibliography */
+        Bibliography: {
+            /** Items */
+            items: components["schemas"]["BibliographyEntry"][];
+            /** Limitations */
+            limitations: string[];
+            /**
+             * Preview
+             * @constant
+             */
+            preview: true;
+            /**
+             * Style
+             * @enum {string}
+             */
+            style: "apa7" | "mla9" | "chicago18";
+            /** Style Label */
+            style_label: string;
+        };
+        /** BibliographyEntry */
+        BibliographyEntry: {
+            /**
+             * Reference Id
+             * Format: uuid
+             */
+            reference_id: string;
+            /** Segments */
+            segments: components["schemas"]["BibliographySegment"][];
+            /** Text */
+            text: string;
+            /** Warnings */
+            warnings: string[];
+        };
+        /** BibliographySegment */
+        BibliographySegment: {
+            /** Italic */
+            italic: boolean;
             /** Text */
             text: string;
         };
@@ -3716,6 +3773,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReferenceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_bibliography_api_v1_projects__project_id__references_bibliography_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Bibliography"];
                 };
             };
             /** @description Validation Error */
