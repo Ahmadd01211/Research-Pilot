@@ -1,5 +1,9 @@
 # ResearchPilot project status
 
+## Direct evidence and writing navigation - 24 October 2026
+
+The dashboard and sidebar now open Evidence and Writing without visiting a project overview first. With one active project, the action opens that project directly; with several, a short project chooser shows the matching destination. Project cards also link straight to both tasks, and the current-project sidebar keeps them reachable while working. No API or ownership rules changed. Frontend lint, typecheck, production build and all 74 tests passed. Visual browser review remains for the user.
+
 ## Editable export snapshots - 24 October 2026
 
 Exports now include owner-scoped XLSX reference records and DOCX writing drafts alongside CSV and Markdown. Migration 0015 extends the export-kind constraint; the same request idempotency, draft revision checks, immutable download history, 2 MB file limit and 100 MB project limit apply. Excel metadata is stored as literal cells, including formula-looking titles. Word headings are basic and other Markdown or citation markers stay literal. The isolated backend suite passed 151 tests; Ruff and strict mypy passed. Frontend 70 tests, lint, typecheck and build passed. Browser visual acceptance and public-release export retention remain open. See `docs/learning/15-export-snapshots.md`.
