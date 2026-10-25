@@ -2,9 +2,9 @@
 
 Branch: feat/research-completion. Base: 9d4210a4e37a276b85d1cdc8d2257b1cc9d1a37e.
 
-Implemented: draft protection/conflict review; named manuscript structures and outline navigation; matrix CSV/XLSX exports with provenance; verified publication-detail storage, previews and exports; bounded offline BibTeX/RIS import previews with researcher review. This branch includes draft-protection commit 8306bf1. It is not the completion of every item in RELEASE_CHECKLIST.md.
+Implemented: writing and project edit conflict review; named manuscript structures and outline navigation; matrix CSV/XLSX exports with provenance; verified publication-detail storage, previews and exports; bounded offline BibTeX/RIS import previews with researcher review. This branch includes draft-protection commit 8306bf1. It is not the completion of every item in RELEASE_CHECKLIST.md.
 
-Verification: 159 backend tests; 85 frontend tests; strict mypy; full backend Ruff; frontend lint, TypeScript and build all pass. Known test warnings concern Starlette transport deprecation and Alembic pgvector reflection. Vite warns about bundle size. Browser visual acceptance remains for the owner.
+Verification: 159 backend tests; 88 frontend tests; strict mypy; full backend Ruff; frontend lint, TypeScript and build all pass. Known test warnings concern Starlette transport deprecation and Alembic pgvector reflection. Vite warns about bundle size. Browser visual acceptance remains for the owner.
 
 Tests ran in Compose project rp_completion_test, using isolated rp_greenfield_test PostgreSQL, separate Redis, temporary storage and no published ports, with image rp-completion-backend:dev. No application data, runtime or volumes were changed. No live provider calls were made.
 
@@ -35,11 +35,14 @@ Known limitations and remaining product/release work: RELEASE_CHECKLIST.md. Pass
 - docs/RELEASE_CHECKLIST.md
 - docs/ROADMAP.md
 - docs/learning/13-reference-manager.md
+- docs/learning/01-research-projects.md
 - docs/learning/14-writing-drafts.md
 - docs/learning/15-export-snapshots.md
 - docs/openapi.json
 - frontend/src/features/exports/exports-page.tsx
 - frontend/src/features/references/references-page.tsx
+- frontend/src/features/projects/project-conflict-review.tsx
+- frontend/src/features/projects/project-form.tsx
 - frontend/src/features/writing/draft-conflict-review.tsx
 - frontend/src/features/writing/draft-navigation-guard.tsx
 - frontend/src/features/writing/draft-starter.tsx
@@ -53,4 +56,5 @@ Known limitations and remaining product/release work: RELEASE_CHECKLIST.md. Pass
 - frontend/tests/draft-starter.test.tsx
 - frontend/tests/exports.test.tsx
 - frontend/tests/references.test.tsx
+- frontend/tests/projects.test.tsx
 - frontend/tests/writing.test.tsx

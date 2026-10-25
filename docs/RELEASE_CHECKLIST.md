@@ -19,7 +19,7 @@ Updated 25 October 2026. This is a status checklist, not a claim that the produc
 - Evidence-linked writing assistance: explicit suggestion acceptance and provider evaluation before enabling generated prose.
 - Literature synthesis: source-grounded extraction/suggestions, comparison coverage and researcher approval.
 - Document history: explicit source replacement, retained original versions and historical reader navigation.
-- Project/matrix/gap conflict review beyond the writing editor.
+- Matrix and gap conflict review beyond the writing and project editors.
 - Broader representative corpus and real-provider RAG/answer evaluation. Existing seven-case lexical scores are not a universal quality claim.
 - Durable provider metering and budget enforcement with a confirmed spending policy.
 - Password recovery and real email delivery, production identity policy, trusted proxy/rate controls.

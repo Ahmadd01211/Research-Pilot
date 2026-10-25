@@ -119,6 +119,10 @@ An edit form retains the revision it loaded. Background changes should not silen
 
 Native semantic controls and a named modal dialog support keyboard operation. Component tests verify empty states, structured form data, retry identity, archive restrictions, retained conflict edits and deletion confirmation. The user still performs visual and real-device acceptance.
 
+### Project edit conflict review - 26 October 2026
+
+When a project PATCH returns 409, the form fetches the current owned project and presents the local draft beside the latest saved values. The fields are locked until the researcher chooses **Keep my edits** or **Load the latest saved version**. Keeping local text adopts the current revision as the next save baseline, but does not save automatically; the researcher reviews and saves again. Loading the server version resets the form only after that explicit choice. If fields are edited while a request is pending, a successful response advances the revision and keeps later typing in the form with a clear unsaved notice. These choices avoid silent overwrites but do not merge individual fields automatically.
+
 ## 10. Why no Celery job here?
 
 Creating a project is a short database operation. Doing it in the API gives immediate results and a simple transaction. Celery is reserved for work such as document extraction, embeddings and exports that genuinely needs independent execution and recovery. Background queues add delivery/retry/state complexity and should solve a real workload need.

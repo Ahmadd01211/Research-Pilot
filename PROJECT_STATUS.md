@@ -2,7 +2,7 @@
 
 ## Continued product phases - 26 October 2026 (isolated, not deployed)
 
-Branch feat/research-completion adds protected writing drafts, named manuscript structures, matrix CSV/XLSX snapshots with immutable source identities, verified publication details, offline BibTeX/RIS import previews and two authorized PDF extraction lint fixes. Migrations 0016 and 0017 are additive; readiness uses the shipped migration head rather than a copied revision string. Final checks: 159 backend tests, 85 frontend tests, full backend Ruff, strict mypy, frontend lint/typecheck and production build all pass. The dedicated rp_completion_test environment uses disposable test data; the running app is unchanged. Paid provider calls and permanent deletion remain disabled. See docs/RELEASE_CHECKLIST.md for outstanding product and release work.
+Branch feat/research-completion adds protected writing and project edits, named manuscript structures, matrix CSV/XLSX snapshots with immutable source identities, verified publication details, offline BibTeX/RIS import previews and two authorized PDF extraction lint fixes. Project conflicts now show local/latest values and require an explicit choice; mid-save typing is retained. Migrations 0016 and 0017 are additive; readiness uses the shipped migration head rather than a copied revision string. Checks pass: 159 backend tests, 88 frontend tests, full backend Ruff, strict mypy, frontend lint/typecheck and production build. The dedicated review app uses its own database, Redis and storage on port 3101; the shared app remains stopped. Paid provider calls and permanent deletion remain disabled. See docs/RELEASE_CHECKLIST.md for outstanding product and release work.
 
 ## Draft protection - 25 October 2026
 
