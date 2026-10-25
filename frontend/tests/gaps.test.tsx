@@ -39,3 +39,35 @@ it('labels one-paper coverage and keeps candidate claims linked to matrix and PD
   expect(screen.getByText(/Supporting notes come from one paper/)).toBeVisible();
   expect(screen.getByRole('link', { name: /Check original PDF/ })).toHaveAttribute('href', `/projects/${projectId}/library/${paperId}?page=9&source=abc&reader=reader-v1&passage=passage-2`);
 });
+
+it('shows the latest candidate after a revision conflict and lets the researcher explicitly load it', async () => {
+  const matrixRow = { id: 'matrix-row', document_id: paperId, document_filename: 'Paper.pdf', cells: [{ id: cellId, field: 'finding', value: 'Adoption varied by firm size.', page_number: 9 }] };
+  const evidence = { matrix_cell_id: cellId, stance: 'supports', field: 'finding', value: 'Adoption varied by firm size.', document_id: paperId, document_filename: 'Paper.pdf', page_number: 9, source_sha256: 'abc', reader_version: 'reader-v1', kind: 'prose', source_metadata: { passage_id: 'passage-2' }, stale: false };
+  const latest = { id: 'gap-1', title: 'Latest candidate title', rationale: 'Latest saved explanation of the candidate.', revision: 2, created_at: '2026-10-21T00:00:00Z', updated_at: '2026-10-22T00:00:00Z', uncertainty: 'limited_coverage', supporting_papers: 1, evidence: [evidence] };
+  let conflictOnce = true;
+  const mock = vi.fn((url: string, init?: RequestInit) => {
+    if (url === '/api/v1/me') return Promise.resolve(Response.json({ display_name: 'Researcher', email: 'r@example.com' }));
+    if (url === '/api/v1/auth/csrf') return Promise.resolve(Response.json({ csrf_token: 'synthetic' }));
+    if (url.endsWith('/matrix')) return Promise.resolve(Response.json({ items: [matrixRow] }));
+    if (url.includes('/gaps/gap-1') && init?.method === 'PUT') {
+      if (conflictOnce) { conflictOnce = false; return Promise.resolve(Response.json({ detail: 'This candidate changed.' }, { status: 409 })); }
+      return Promise.resolve(Response.json(latest));
+    }
+    if (url.endsWith('/gaps')) return Promise.resolve(Response.json({ items: [latest] }));
+    return Promise.resolve(Response.json({ id: projectId, title: 'AI adoption', archived_at: null }));
+  });
+  vi.stubGlobal('fetch', mock);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/projects/${projectId}/gaps`]}><AppRoutes/></MemoryRouter></QueryClientProvider>);
+  const ui = userEvent.setup();
+  await ui.click(await screen.findByRole('button', { name: 'Edit candidate' }));
+  await ui.clear(screen.getByLabelText('Candidate title'));
+  await ui.type(screen.getByLabelText('Candidate title'), 'My unsaved candidate');
+  await ui.click(screen.getByRole('button', { name: 'Save candidate' }));
+  expect(await screen.findByRole('heading', { name: 'This candidate changed while you were editing' })).toBeVisible();
+  expect(screen.getByLabelText('Your unsaved candidate')).toHaveTextContent('My unsaved candidate');
+  expect(screen.getByLabelText('Latest saved candidate')).toHaveTextContent('Latest candidate title');
+  await ui.click(screen.getByRole('button', { name: 'Load the latest saved candidate' }));
+  expect(screen.getByLabelText('Candidate title')).toHaveValue('Latest candidate title');
+  expect(screen.getByLabelText('Why this might be a gap')).toHaveValue('Latest saved explanation of the candidate.');
+});

@@ -1,6 +1,6 @@
 # Completion and release gates
 
-Updated 25 October 2026. This is a status checklist, not a claim that the product is ready for public release.
+Updated 26 October 2026. This is a status checklist, not a claim that the product is ready for public release.
 
 ## Implemented in feat/research-completion
 
@@ -10,7 +10,7 @@ Updated 25 October 2026. This is a status checklist, not a claim that the produc
 - Verified volume, issue, pages, article number, publisher and edition metadata; form, formatting preview and raw exports.
 - Offline BibTeX/RIS import preview with bounded input, conservative field parsing, and per-record researcher review through the normal duplicate-checking editor.
 - Additive migrations 0016/0017 and readiness derived from the shipped Alembic head.
-- Isolated backend tests and frontend component/build checks. No shared runtime changes.
+- Isolated backend tests and frontend component/build checks. No shared runtime changes. The local isolated review app runs on port 3101.
 
 ## Remaining product phases
 
@@ -19,7 +19,7 @@ Updated 25 October 2026. This is a status checklist, not a claim that the produc
 - Evidence-linked writing assistance: explicit suggestion acceptance and provider evaluation before enabling generated prose.
 - Literature synthesis: source-grounded extraction/suggestions, comparison coverage and researcher approval.
 - Document history: explicit source replacement, retained original versions and historical reader navigation.
-- Matrix and gap conflict review beyond the writing and project editors.
+- Broader search coverage for literature gaps and optional AI suggestions after retrieval evaluation.
 - Broader representative corpus and real-provider RAG/answer evaluation. Existing seven-case lexical scores are not a universal quality claim.
 - Durable provider metering and budget enforcement with a confirmed spending policy.
 - Password recovery and real email delivery, production identity policy, trusted proxy/rate controls.

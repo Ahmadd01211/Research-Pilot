@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowUpRight, BookOpen, LoaderCircle, Plus, Save, Trash2 } from 'lucide-react';
 import { Link, useParams } from 'react-router';
-import { mutate, read } from '@/lib/api/client';
+import { ApiError, mutate, read } from '@/lib/api/client';
 import type { components } from '@/lib/api/schema';
 import { useProject } from '@/features/projects/api';
 
@@ -25,6 +25,9 @@ function draftFrom(row?: RowRead): Draft {
   row?.cells.forEach(cell => { result[cell.field] = { value: cell.value, chunk_id: cell.chunk_id, page: cell.page_number }; });
   return result;
 }
+function MatrixConflictReview({ local, latest, unavailable, missing, onKeep, onLoad, onRetry }: { local: Draft; latest: RowRead | null; unavailable: boolean; missing: boolean; onKeep: () => void; onLoad: () => void; onRetry: () => void }) {
+  return <section className="notice mt16" aria-labelledby="matrix-conflict-title"><div><h3 id="matrix-conflict-title">This matrix row changed while you were editing</h3><p className="mt16">Compare your unsaved notes with the latest saved row. Nothing has been overwritten.</p>{unavailable ? <><p role="alert">The latest row could not be loaded. Your unsaved notes are still here.</p><button className="btn mt16" type="button" onClick={onRetry}>Retry conflict review</button></> : missing ? <><p role="alert">This row is no longer available. Your unsaved notes remain below; copy them before closing if you want to keep them.</p><section aria-label="Your unsaved matrix notes" className="mt16">{fields.map(field => <p key={field.key}><strong>{field.label}:</strong> {local[field.key].value || 'Not set'}</p>)}</section></> : latest ? <div className="project-form-grid mt16"><section aria-label="Your unsaved matrix notes"><h4>Your unsaved notes</h4>{fields.map(field => <p key={field.key}><strong>{field.label}:</strong> {local[field.key].value || 'Not set'}</p>)}</section><section aria-label="Latest saved matrix notes"><h4>Latest saved notes</h4>{fields.map(field => <p key={field.key}><strong>{field.label}:</strong> {latest.cells.find(cell => cell.field === field.key)?.value || 'Not set'}</p>)}</section></div> : <p role="status">Loading the latest saved row…</p>}{latest && <div className="row wrap mt16"><button className="btn primary" type="button" onClick={onKeep}>Keep my edits</button><button className="btn" type="button" onClick={onLoad}>Load the latest saved row</button></div>}</div></section>;
+}
 function sourceUrl(projectId: string, documentId: string, source: { source_sha256: string; reader_version: string; page_number: number; kind: string; source_metadata: Record<string, unknown> }) {
   const params = new URLSearchParams({ page: String(source.page_number), source: source.source_sha256, reader: source.reader_version });
   if (source.kind === 'prose' && typeof source.source_metadata.passage_id === 'string') params.set('passage', source.source_metadata.passage_id);
@@ -46,7 +49,18 @@ function RowEditor({ projectId, row, papers, archived, onDone }: { projectId: st
   const [documentId, setDocumentId] = useState(row?.document_id ?? '');
   const [draft, setDraft] = useState<Draft>(() => draftFrom(row));
   const [validation, setValidation] = useState('');
-  const save = useMutation({ mutationFn: (cells: { field: FieldName; value: string; chunk_id: string }[]) => row ? mutate<RowRead>(`/projects/${projectId}/matrix/${row.id}`, 'PUT', { expected_revision: row.revision, cells }) : mutate<RowRead>(`/projects/${projectId}/matrix`, 'POST', { document_id: documentId, cells }), onSuccess: async () => { await cache.invalidateQueries({ queryKey: ['matrix', projectId] }); onDone(); } });
+  const [revision, setRevision] = useState(row?.revision);
+  const [conflict, setConflict] = useState<{ latest: RowRead | null; local: Draft; unavailable: boolean; missing: boolean } | null>(null);
+  const [keptLocal, setKeptLocal] = useState(false);
+  async function reviewConflict(local: Draft) {
+    if (!row) return;
+    setConflict({ latest: null, local, unavailable: false, missing: false });
+    try { const latest = await read<MatrixRead>(`/projects/${projectId}/matrix`); const found = latest.items.find(item => item.id === row.id) ?? null; setConflict({ latest: found, local, unavailable: false, missing: !found }); }
+    catch { setConflict({ latest: null, local, unavailable: true, missing: false }); }
+  }
+  const save = useMutation({ mutationFn: (cells: { field: FieldName; value: string; chunk_id: string }[]) => row ? mutate<RowRead>(`/projects/${projectId}/matrix/${row.id}`, 'PUT', { expected_revision: revision, cells }) : mutate<RowRead>(`/projects/${projectId}/matrix`, 'POST', { document_id: documentId, cells }), onSuccess: async () => { await cache.invalidateQueries({ queryKey: ['matrix', projectId] }); onDone(); }, onError: async error => {
+    if (row && error instanceof ApiError && error.status === 409) await reviewConflict(structuredClone(draft));
+  } });
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!documentId) { setValidation('Choose a paper.'); return; }
@@ -56,7 +70,9 @@ function RowEditor({ projectId, row, papers, archived, onDone }: { projectId: st
     setValidation('');
     save.mutate(active.map(item => ({ field: item.key, value: draft[item.key].value.trim(), chunk_id: draft[item.key].chunk_id })));
   }
-  return <section className="card matrix-editor"><div className="between"><div><p className="eyebrow">USER-AUTHORED · SOURCE-LINKED</p><h2>{row ? 'Edit matrix row' : 'Add evidence row'}</h2></div><button className="btn" type="button" onClick={onDone}>Close</button></div><p className="muted mt16">Write your interpretation of the source. Select a passage for each field so readers can verify it. Leave unknown fields empty.</p><form onSubmit={submit}><label className="field mt24">Paper<select value={documentId} disabled={!!row} onChange={event => { setDocumentId(event.target.value); setDraft(blank()); }}><option value="">Choose a paper</option>{papers.map(paper => <option key={paper.id} value={paper.id}>{paper.filename}</option>)}</select></label><div className="matrix-editor-grid">{fields.map(item => <SourceField key={item.key} projectId={projectId} documentId={documentId} name={item.key} label={item.label} cell={draft[item.key]} onChange={cell => setDraft(current => ({ ...current, [item.key]: cell }))}/>)}</div>{validation && <p role="alert" className="alert mt16">{validation}</p>}{save.isError && <p role="alert" className="alert mt16">{save.error.message} Your notes remain here for review.</p>}<div className="row mt24"><button className="btn primary" type="submit" disabled={archived || save.isPending}>{save.isPending ? <><LoaderCircle className="spin" size={15}/>Saving…</> : <><Save size={15}/>Save evidence row</>}</button></div></form></section>;
+  function keepLocal() { if (!conflict?.latest) return; setRevision(conflict.latest.revision); setConflict(null); setKeptLocal(true); save.reset(); }
+  function loadLatest() { if (!conflict?.latest) return; setRevision(conflict.latest.revision); setDraft(draftFrom(conflict.latest)); setConflict(null); setKeptLocal(false); save.reset(); }
+  return <section className="card matrix-editor"><div className="between"><div><p className="eyebrow">USER-AUTHORED · SOURCE-LINKED</p><h2>{row ? 'Edit matrix row' : 'Add evidence row'}</h2></div><button className="btn" type="button" onClick={onDone}>Close</button></div><p className="muted mt16">Write your interpretation of the source. Select a passage for each field so readers can verify it. Leave unknown fields empty.</p>{conflict && <MatrixConflictReview local={conflict.local} latest={conflict.latest} unavailable={conflict.unavailable} missing={conflict.missing} onKeep={keepLocal} onLoad={loadLatest} onRetry={() => void reviewConflict(conflict.local)}/>} {keptLocal && <p className="notice mt16" role="status">Your edits remain. Review them and save again against the latest row revision.</p>}<form onSubmit={submit}><fieldset disabled={!!conflict} style={{ border: 0, padding: 0, margin: 0 }}><label className="field mt24">Paper<select value={documentId} disabled={!!row} onChange={event => { setDocumentId(event.target.value); setDraft(blank()); }}><option value="">Choose a paper</option>{papers.map(paper => <option key={paper.id} value={paper.id}>{paper.filename}</option>)}</select></label><div className="matrix-editor-grid">{fields.map(item => <SourceField key={item.key} projectId={projectId} documentId={documentId} name={item.key} label={item.label} cell={draft[item.key]} onChange={cell => setDraft(current => ({ ...current, [item.key]: cell }))}/>)}</div></fieldset>{validation && <p role="alert" className="alert mt16">{validation}</p>}{save.isError && !conflict && <p role="alert" className="alert mt16">{save.error.message} Your notes remain here for review.</p>}<div className="row mt24"><button className="btn primary" type="submit" disabled={archived || save.isPending || !!conflict}>{save.isPending ? <><LoaderCircle className="spin" size={15}/>Saving…</> : <><Save size={15}/>Save evidence row</>}</button></div></form></section>;
 }
 export function MatrixPage() {
   const { id = '' } = useParams(), project = useProject(id), cache = useQueryClient();

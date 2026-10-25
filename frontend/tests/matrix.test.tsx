@@ -38,3 +38,40 @@ it('saves a user-authored matrix note only with its chosen source and links the 
   expect(await screen.findByText('Adoption varied by firm size.')).toBeVisible();
   expect(screen.getByRole('link', { name: /PDF p. 1/ })).toHaveAttribute('href', `/projects/${projectId}/library/${paperId}?page=1&source=abc&reader=reader-v1&passage=passage-1`);
 });
+
+it('reviews a stale matrix edit and requires a separate save against the latest revision', async () => {
+  const cell = { id: 'cell-1', field: 'finding', value: 'Original finding.', chunk_id: 'chunk-1', page_number: 1, kind: 'prose', source_sha256: 'abc', reader_version: 'reader-v1', source_metadata: { passage_id: 'passage-1' } };
+  let latest = { id: 'row-1', document_id: paperId, document_filename: 'Paper.pdf', revision: 2, created_at: '2026-10-21T00:00:00Z', updated_at: '2026-10-22T00:00:00Z', cells: [{ ...cell, value: 'Another researcher update.' }] };
+  let conflictOnce = true;
+  const mock = vi.fn((url: string, init?: RequestInit) => {
+    if (url === '/api/v1/me') return Promise.resolve(Response.json({ display_name: 'Researcher', email: 'r@example.com' }));
+    if (url === '/api/v1/auth/csrf') return Promise.resolve(Response.json({ csrf_token: 'synthetic' }));
+    if (url.includes('/matrix/row-1') && init?.method === 'PUT') {
+      const body = JSON.parse(String(init.body));
+      if (conflictOnce) { conflictOnce = false; return Promise.resolve(Response.json({ detail: 'This matrix row changed.' }, { status: 409 })); }
+      expect(body.expected_revision).toBe(2);
+      latest = { ...latest, revision: 3, cells: body.cells.map((item: { field: string; value: string; chunk_id: string }) => ({ ...cell, ...item })) };
+      return Promise.resolve(Response.json(latest));
+    }
+    if (url.endsWith('/matrix')) return Promise.resolve(Response.json({ items: [latest] }));
+    if (url.includes('/matrix/sources?')) return Promise.resolve(Response.json({ total: 1, items: [{ chunk_id: 'chunk-1', page_number: 1, kind: 'prose', text: 'The authors surveyed firms.', source_sha256: 'abc', reader_version: 'reader-v1', source_metadata: { passage_id: 'passage-1' } }] }));
+    if (url.includes('/documents?')) return Promise.resolve(Response.json({ items: [{ id: paperId, filename: 'Paper.pdf', status: 'extracted' }], total: 1 }));
+    return Promise.resolve(Response.json({ id: projectId, title: 'AI adoption', archived_at: null }));
+  });
+  vi.stubGlobal('fetch', mock);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/projects/${projectId}/matrix`]}><AppRoutes/></MemoryRouter></QueryClientProvider>);
+  const ui = userEvent.setup();
+  await ui.click(await screen.findByRole('button', { name: 'Edit' }));
+  await ui.clear(screen.getByLabelText('Finding'));
+  await ui.type(screen.getByLabelText('Finding'), 'My preserved interpretation.');
+  await ui.click(screen.getByRole('button', { name: 'Save evidence row' }));
+  expect(await screen.findByRole('heading', { name: 'This matrix row changed while you were editing' })).toBeVisible();
+  expect(screen.getByLabelText('Your unsaved matrix notes')).toHaveTextContent('My preserved interpretation.');
+  expect(screen.getByLabelText('Latest saved matrix notes')).toHaveTextContent('Another researcher update.');
+  await ui.click(screen.getByRole('button', { name: 'Keep my edits' }));
+  expect(screen.getByLabelText('Finding')).toHaveValue('My preserved interpretation.');
+  expect(screen.getByRole('status')).toHaveTextContent('save again against the latest row revision');
+  await ui.click(screen.getByRole('button', { name: 'Save evidence row' }));
+  expect(await screen.findByText('My preserved interpretation.')).toBeVisible();
+});

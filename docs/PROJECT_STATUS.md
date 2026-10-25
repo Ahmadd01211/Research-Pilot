@@ -180,3 +180,7 @@ Verification: 102 backend tests, 56 frontend tests and 23 real-PDF synthetic lay
 
 
 Figure preview association fix: figure captions above or below a nearby embedded image can now receive a focused crop, provided the nearest image match is unambiguous. Ambiguous/vector-only figures retain the full-page fallback. Existing documents need reader update once.
+
+## Matrix and gap edit conflict review — 26 October 2026
+
+Matrix-row and candidate-gap edits now handle revision conflicts with a review screen that preserves the unsaved draft, loads the latest saved record, and offers explicit keep-draft or load-latest choices. Keeping local edits rebases the expected revision but still requires a separate deliberate save. Gap review refreshes its matrix evidence and filters evidence links whose cells were removed. Retry controls remain available if refresh fails. Frontend lint, TypeScript, all 90 frontend tests and production build pass; the build has the existing large-chunk warning. Backend unchanged in this slice; the previously verified 159 backend tests, Ruff and strict mypy still apply. Manual visual review remains outstanding.
