@@ -14,11 +14,17 @@ class ReferenceInput(BaseModel):
     authors: list[str] = Field(min_length=1, max_length=20)
     year: int | None = Field(default=None, ge=1500, le=2100)
     container_title: str = Field(default="", max_length=500)
+    volume: str = Field(default="", max_length=40)
+    issue: str = Field(default="", max_length=40)
+    pages: str = Field(default="", max_length=80)
+    article_number: str = Field(default="", max_length=80)
+    publisher: str = Field(default="", max_length=300)
+    edition: str = Field(default="", max_length=80)
     doi: str | None = Field(default=None, max_length=260)
     url: str = Field(default="", max_length=2000)
     document_id: UUID | None = None
 
-    @field_validator("title", "authors", "container_title", "doi", "url")
+    @field_validator("title", "authors", "container_title", "doi", "url", "volume", "issue", "pages", "article_number", "publisher", "edition")
     @classmethod
     def clean(cls, value: object) -> object:
         if isinstance(value, str):

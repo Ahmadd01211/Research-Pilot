@@ -1,8 +1,10 @@
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
+from pathlib import Path
 from uuid import uuid4
 
+from alembic.script import ScriptDirectory
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -26,6 +28,7 @@ from app.modules.references.router import router as references_router
 from app.modules.writing.router import router as writing_router
 
 logger = logging.getLogger("researchpilot")
+EXPECTED_SCHEMA_REVISION = ScriptDirectory(str(Path(__file__).resolve().parents[1] / "alembic")).get_current_head()
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -106,7 +109,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def ready() -> dict[str, str]:
         def probe() -> None:
             with app.state.engine.connect() as connection:
-                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0015"
+                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == EXPECTED_SCHEMA_REVISION
                 connection.execute(text("SELECT id, token_hash, csrf_hash FROM sessions LIMIT 0"))
                 connection.execute(
                     text("SELECT id, owner_id, revision FROM research_projects LIMIT 0")

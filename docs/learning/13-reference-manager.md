@@ -24,3 +24,11 @@ To review: open a project, choose **References**, add a record, link an uploaded
 Entries are sorted by author names (diacritics folded, case-insensitive), then year (missing year first), title and record ID. The same order is used for every style.
 
 **Known limitations, shown in the UI.** The stored fields have no volume, issue, pages, publisher, edition, editors, full dates or access dates, so those parts are omitted. Book chapters are not supported, and a book's container field is omitted with a warning. Titles keep the capitalization you entered; no automatic sentence case or title case is applied. APA `2024a`/`2024b` suffixes are not added; colliding entries are flagged instead. Repeated-author dashes, Chicago notes and more than 20 APA authors are not supported. Adding these properly requires new fields, which means a migration, and that is a separate, approved phase.
+
+## Verified publication details - 25 October 2026
+
+Migration 0017 adds bounded volume, issue, pages, article_number, publisher and edition fields. Researchers edit these details explicitly; no metadata is inferred. Older clients that omit the new fields preserve existing values during an update, while an explicit empty value clears a field. CSV/XLSX snapshots include all six fields.
+
+Journal previews now use stored volume/issue/pages or article numbers. Book previews use a stored publisher and edition text. The existing limited-preview labelling remains: editors, full dates, chapters, automatic title capitalization, same-author/year suffixes and notes still need further work. If pages and an article number both exist, the preview uses pages and warns rather than hiding that decision.
+
+Patterns checked against the official [APA journal reference examples](https://apastyle.apa.org/style-grammar-guidelines/references/examples/journal-article-references), [MLA citations by format](https://style.mla.org/works-cited/citations-by-format/) and [Chicago notes/bibliography examples](https://www.chicagomanualofstyle.org/tools_citationguide/citation-guide-1.html). These examples do not establish full manual compliance.

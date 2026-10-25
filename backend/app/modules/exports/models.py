@@ -18,7 +18,7 @@ from app.infrastructure.database.base import Base
 class ExportRecord(Base):
     __tablename__ = "export_records"
     __table_args__ = (
-        CheckConstraint("kind IN ('reference_csv','reference_xlsx','draft_markdown','draft_docx')", name="valid_kind"),
+        CheckConstraint("kind IN ('reference_csv','reference_xlsx','matrix_csv','matrix_xlsx','draft_markdown','draft_docx')", name="valid_kind"),
         CheckConstraint("byte_size > 0 AND byte_size <= 2097152", name="bounded_size"),
         UniqueConstraint("project_id", "request_id", name="uq_export_project_request"),
         Index("ix_export_project_created", "project_id", "created_at", "id"),

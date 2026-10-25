@@ -55,3 +55,27 @@ it('shows loading, empty and retryable error states', async () => {
   await userEvent.setup().click(retry);
   expect(await screen.findByText('Journal')).toBeInTheDocument();
 });
+
+it('loads and submits verified publication details while editing', async () => {
+  const detailed = { ...reference, volume: '12', issue: '3', pages: '45-67', publisher: 'Press', edition: '2nd ed.', article_number: '' };
+  const mock = vi.fn((url: string, init?: RequestInit) => {
+    if (url.endsWith('/me')) return Promise.resolve(Response.json({ display_name: 'Researcher', email: 'r@example.com' }));
+    if (url.endsWith('/csrf')) return Promise.resolve(Response.json({ csrf_token: 'synthetic' }));
+    if (url.includes('/duplicates?') || url.includes('/documents?')) return Promise.resolve(Response.json({ items: [] }));
+    if (url.endsWith('/bibliography')) return Promise.resolve(Response.json(preview));
+    if (url.endsWith('/settings')) return Promise.resolve(Response.json({ style: 'apa7', revision: 0 }));
+    if (url.endsWith('/references')) return Promise.resolve(Response.json({ items: [detailed] }));
+    if (init?.method === 'PUT') return Promise.resolve(Response.json(detailed));
+    return Promise.resolve(Response.json({ id: projectId, title: 'AI adoption', archived_at: null }));
+  });
+  vi.stubGlobal('fetch', mock);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/projects/${projectId}/references`]}><AppRoutes/></MemoryRouter></QueryClientProvider>);
+  const ui = userEvent.setup(); await ui.click(await screen.findByRole('button', { name: 'Edit' }));
+  expect(screen.getByLabelText('Volume')).toHaveValue('12');
+  expect(screen.getByLabelText('Page range')).toHaveValue('45-67');
+  await ui.clear(screen.getByLabelText('Issue')); await ui.type(screen.getByLabelText('Issue'), '4');
+  await ui.click(screen.getByRole('button', { name: 'Save reference' }));
+  const call = mock.mock.calls.find(([, init]) => init?.method === 'PUT');
+  expect(JSON.parse(String(call?.[1]?.body))).toMatchObject({ volume: '12', issue: '4', pages: '45-67', publisher: 'Press', expected_revision: 1 });
+});

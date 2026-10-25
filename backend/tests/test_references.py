@@ -39,3 +39,24 @@ def test_references_are_owner_scoped_and_archived_projects_are_read_only(client)
     assert client.get(base).status_code == 404
     assert client.get(base + "/settings").status_code == 404
     assert client.post(base, headers=csrf(client), json=payload).status_code == 404
+
+def test_reference_publication_details_roundtrip_and_legacy_update(client):
+    project, _ = setup_source(client)
+    base = f"/api/v1/projects/{project['id']}/references"
+    payload = {"kind": "journal", "title": "Detailed study", "authors": ["Scholar, Ada"],
+               "year": 2024, "container_title": "Journal", "volume": "12", "issue": "3",
+               "pages": "45-67", "article_number": "", "publisher": "Publisher", "edition": "2nd ed."}
+    created = client.post(base, headers=csrf(client), json=payload)
+    assert created.status_code == 201, created.text
+    item = created.json()
+    for key in ("volume", "issue", "pages", "article_number", "publisher", "edition"):
+        assert item[key] == payload[key]
+    legacy = {key: value for key, value in payload.items() if key not in
+              ("volume", "issue", "pages", "article_number", "publisher", "edition")}
+    updated = client.put(base + "/" + item["id"], headers=csrf(client),
+                         json={**legacy, "title": "Edited by old client", "expected_revision": 1})
+    assert updated.status_code == 200
+    assert updated.json()["volume"] == "12" and updated.json()["pages"] == "45-67"
+    clear = client.put(base + "/" + item["id"], headers=csrf(client),
+                       json={**legacy, "volume": "", "expected_revision": 2})
+    assert clear.status_code == 200 and clear.json()["volume"] == ""

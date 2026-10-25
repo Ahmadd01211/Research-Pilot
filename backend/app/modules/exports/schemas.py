@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-ExportKind = Literal["reference_csv", "reference_xlsx", "draft_markdown", "draft_docx"]
+ExportKind = Literal["reference_csv", "reference_xlsx", "matrix_csv", "matrix_xlsx", "draft_markdown", "draft_docx"]
 
 
 class ExportInput(BaseModel):

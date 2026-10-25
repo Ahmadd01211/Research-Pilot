@@ -15,3 +15,7 @@ The editor owns a stable saved baseline separate from refreshed query data. Its 
 The application entry point now uses React Router's data router around the existing route tree, enabling its supported navigation blocker without changing URLs. A writing-only guard handles internal navigation and browser history; reload/close warnings depend on browser support and user interaction. The comparison component presents plain text. No draft text is persisted in browser storage, and there are no backend, schema, migration or provider changes.
 
 Verification: 80 frontend tests pass, including links and history blocking, reload warnings, conflict comparison, explicit replacement confirmation, refresh preservation and edits during saves. Lint, TypeScript and production build pass; the existing bundle-size warning remains. Visual acceptance belongs to the user.
+
+## Named manuscript starters - 25 October 2026
+
+New drafts now ask for a title and an explicit structure: blank, research article or literature review. Structures add headings only, never claims or study findings. The form retains its inputs after creation errors. Outline headings select their source position in the editor; word and character counts update locally. Draft saving, reference validation and immutable versions remain server-authoritative.

@@ -2,7 +2,7 @@
 
 Rules follow the APA 7 reference examples (apastyle.apa.org), the MLA 9 core elements
 (style.mla.org) and Chicago 18 notes-bibliography bibliography entries (chicagomanualofstyle.org).
-Fields the record does not hold (volume, issue, pages, publisher, editors, full dates) are
+Fields the record does not hold (editors and full dates) are
 omitted and reported as limitations instead of approximated.
 
 Author convention: "Family, Given" marks a person with a known family/given boundary.
@@ -35,8 +35,7 @@ STYLE_LABELS: dict[str, str] = {
 
 COMMON_LIMITATIONS = [
     "Limited preview: check every entry against the official style manual before use.",
-    "Volume, issue, pages, publisher, edition, editors, full publication dates and access "
-    "dates are not stored, so they are omitted.",
+    "Editors, full publication dates and access dates are not stored, so they are omitted.",
     "Titles keep the capitalization you entered; style-specific title case or sentence "
     "case is not applied automatically.",
     "Authors written as \"Family, Given\" are formatted as people. Other names are shown "
@@ -70,6 +69,12 @@ class Source:
     container_title: str = ""
     doi: str | None = None
     url: str = ""
+    volume: str = ""
+    issue: str = ""
+    pages: str = ""
+    article_number: str = ""
+    publisher: str = ""
+    edition: str = ""
 
 
 @dataclass(frozen=True)
@@ -176,6 +181,8 @@ def _apa(source: Source, entry: Entry, authors: str) -> None:
     entry.add(_period(authors) + " ")
     entry.add(f"({source.year if source.year is not None else 'n.d.'}). ")
     entry.add(source.title, source.kind in {"book", "preprint", "other"})
+    if source.kind == "book" and source.edition:
+        entry.add(f" ({source.edition})")
     if source.kind == "preprint":
         entry.add(" [Preprint].")
     elif not source.title.endswith((".", "?", "!")):
@@ -184,6 +191,13 @@ def _apa(source: Source, entry: Entry, authors: str) -> None:
     if container and source.kind == "journal":
         entry.add(" ")
         entry.add(container, True)
+        if source.volume:
+            entry.add(", ")
+            entry.add(source.volume, True)
+        if source.issue:
+            entry.add(("" if source.volume else ", ") + f"({source.issue})")
+        if source.pages or source.article_number:
+            entry.add(", " + (source.pages or f"Article {source.article_number}"))
         entry.add(".")
     elif container and source.kind == "conference":
         entry.add(" In ")
@@ -191,6 +205,8 @@ def _apa(source: Source, entry: Entry, authors: str) -> None:
         entry.add(".")
     elif container and source.kind in {"preprint", "other"}:
         entry.add(f" {_period(container)}")
+    if source.kind == "book" and source.publisher:
+        entry.add(f" {_period(source.publisher)}")
     if link := _link(source):
         entry.add(f" {link}")
 
@@ -205,8 +221,24 @@ def _mla(source: Source, entry: Entry, authors: str) -> None:
     tail: list[tuple[str, bool]] = []
     if source.container_title and source.kind != "book":
         tail.append((source.container_title, True))
+    if source.kind == "journal":
+        if source.volume:
+            tail.append((f"vol. {source.volume}", False))
+        if source.issue:
+            tail.append((f"no. {source.issue}", False))
+    if source.kind == "book":
+        if source.edition:
+            tail.append((source.edition, False))
+        if source.publisher:
+            tail.append((source.publisher, False))
     if source.year is not None:
         tail.append((str(source.year), False))
+    if source.kind == "journal":
+        if source.pages:
+            label = "pp." if any(mark in source.pages for mark in ("-", "–", ",")) else "p."
+            tail.append((f"{label} {source.pages}", False))
+        elif source.article_number:
+            tail.append((f"article {source.article_number}", False))
     if link := _link(source):
         tail.append((link, False))
     for index, (text, italic) in enumerate(tail):
@@ -224,6 +256,11 @@ def _chicago(source: Source, entry: Entry, authors: str) -> None:
         entry.add("" if source.title.endswith((".", "?", "!")) else ".")
         if source.kind == "other" and source.container_title:
             entry.add(f" {source.container_title},")
+        if source.kind == "book":
+            if source.edition:
+                entry.add(f" {_period(source.edition)}")
+            if source.publisher:
+                entry.add(f" {source.publisher},")
         entry.add(f" {_period(year)}")
     else:
         entry.add(f"“{_period(source.title)}”")
@@ -231,7 +268,14 @@ def _chicago(source: Source, entry: Entry, authors: str) -> None:
         if source.kind == "journal" and container:
             entry.add(" ")
             entry.add(container, True)
-            entry.add(f" ({year}).")
+            if source.volume:
+                entry.add(f" {source.volume}")
+            if source.issue:
+                entry.add(f", no. {source.issue}")
+            entry.add(f" ({year})")
+            if source.pages or source.article_number:
+                entry.add(": " + (source.pages or source.article_number))
+            entry.add(".")
         elif source.kind == "conference" and container:
             entry.add(" In ")
             entry.add(container, True)
@@ -264,6 +308,8 @@ def format_source(source: Source, style: str) -> Entry:
         entry.warnings.append(
             "The container field is not used for books, and book chapters are not "
             "supported; it is omitted.")
+    if source.pages and source.article_number:
+        entry.warnings.append("Both pages and article number are stored; this preview uses pages. Review against the source.")
     if not source.doi and not source.url:
         entry.warnings.append("No DOI or URL is stored, so no link is shown.")
     if source.kind == "other":
@@ -302,7 +348,9 @@ def bibliography(db: Session, owner: UUID, project_id: UUID) -> Bibliography:
         ReferenceRecord.project_id == project_id, ReferenceRecord.deleted_at.is_(None),
     ).limit(MAX_REFERENCES)).all()
     sources = [(record.id, Source(record.kind, record.title, list(record.authors), record.year,
-                                  record.container_title, record.doi, record.url))
+                                  record.container_title, record.doi, record.url,
+                                  record.volume, record.issue, record.pages, record.article_number,
+                                  record.publisher, record.edition))
                for record in records]
     sources.sort(key=lambda item: _sort_key(item[1], item[0]))
     seen: dict[tuple[str, int | None], int] = {}

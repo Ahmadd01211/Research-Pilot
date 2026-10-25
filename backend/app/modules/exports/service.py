@@ -14,8 +14,10 @@ from openpyxl.styles import Font, PatternFill  # type: ignore[import-untyped]
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.modules.exports import matrix_snapshot
 from app.modules.exports.models import ExportRecord
 from app.modules.exports.schemas import ExportInput, ExportPage, ExportRead
+from app.modules.matrix.service import list_rows as matrix_rows
 from app.modules.projects.service import owned as owned_project
 from app.modules.references.models import ReferenceRecord
 from app.modules.writing.models import WritingDraft
@@ -35,7 +37,7 @@ def _safe_cell(value: object) -> str:
     return "'" + text if text.lstrip().startswith(("=", "+", "-", "@")) else text
 
 
-REFERENCE_HEADERS = ["Type", "Title", "Authors", "Year", "Journal or container", "DOI", "URL", "Linked PDF ID"]
+REFERENCE_HEADERS = ["Type", "Title", "Authors", "Year", "Journal or container", "DOI", "URL", "Linked PDF ID", "Volume", "Issue", "Pages", "Article number", "Publisher", "Edition"]
 
 
 def _references(db: Session, project_id: UUID) -> list[ReferenceRecord]:
@@ -46,7 +48,8 @@ def _references(db: Session, project_id: UUID) -> list[ReferenceRecord]:
 
 def _reference_values(record: ReferenceRecord) -> tuple[object, ...]:
     return (record.kind, record.title, "; ".join(record.authors), record.year,
-            record.container_title, record.doi, record.url, record.document_id)
+            record.container_title, record.doi, record.url, record.document_id,
+            record.volume, record.issue, record.pages, record.article_number, record.publisher, record.edition)
 
 
 def _reference_csv(db: Session, project_id: UUID) -> bytes:
@@ -77,7 +80,7 @@ def _reference_xlsx(db: Session, project_id: UUID) -> bytes:
                 cell.data_type = "s"  # Preserve literal metadata; never emit formulas.
     sheet.freeze_panes = "A2"
     sheet.auto_filter.ref = sheet.dimensions
-    for letter, width in zip("ABCDEFGH", (18, 52, 48, 12, 44, 32, 52, 40), strict=True):
+    for letter, width in zip("ABCDEFGHIJKLMN", (18, 52, 48, 12, 44, 32, 52, 40, 16, 16, 20, 24, 40, 24), strict=True):
         sheet.column_dimensions[letter].width = width
     stream = io.BytesIO()
     workbook.save(stream)
@@ -132,7 +135,17 @@ def create(db: Session, owner: UUID, project_id: UUID, data: ExportInput) -> Exp
         return _read(existing)
     if project.archived_at is not None:
         raise HTTPException(409, "Restore the project before creating exports")
-    if data.kind in {"reference_csv", "reference_xlsx"}:
+    if data.kind in {"matrix_csv", "matrix_xlsx"}:
+        if data.draft_id is not None or data.expected_revision is not None:
+            raise HTTPException(422, "Matrix exports do not use a draft")
+        matrix = matrix_rows(db, owner, project_id)
+        extension = "csv" if data.kind == "matrix_csv" else "xlsx"
+        content = (matrix_snapshot.csv_snapshot(matrix) if extension == "csv" else
+                   matrix_snapshot.xlsx_snapshot(matrix))
+        filename = f"matrix-{project_id.hex[:8]}.{extension}"
+        mime = ("text/csv; charset=utf-8" if extension == "csv" else
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    elif data.kind in {"reference_csv", "reference_xlsx"}:
         if data.draft_id is not None or data.expected_revision is not None:
             raise HTTPException(422, "Reference exports do not use a draft")
         extension = "csv" if data.kind == "reference_csv" else "xlsx"

@@ -1049,6 +1049,8 @@
             "enum": [
               "reference_csv",
               "reference_xlsx",
+              "matrix_csv",
+              "matrix_xlsx",
               "draft_markdown",
               "draft_docx"
             ],
@@ -1125,6 +1127,8 @@
             "enum": [
               "reference_csv",
               "reference_xlsx",
+              "matrix_csv",
+              "matrix_xlsx",
               "draft_markdown",
               "draft_docx"
             ],
@@ -2239,6 +2243,12 @@
       },
       "ReferenceInput": {
         "properties": {
+          "article_number": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Article Number",
+            "type": "string"
+          },
           "authors": {
             "items": {
               "type": "string"
@@ -2278,6 +2288,18 @@
             ],
             "title": "Doi"
           },
+          "edition": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Edition",
+            "type": "string"
+          },
+          "issue": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Issue",
+            "type": "string"
+          },
           "kind": {
             "enum": [
               "journal",
@@ -2287,6 +2309,18 @@
               "other"
             ],
             "title": "Kind",
+            "type": "string"
+          },
+          "pages": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Pages",
+            "type": "string"
+          },
+          "publisher": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Publisher",
             "type": "string"
           },
           "title": {
@@ -2299,6 +2333,12 @@
             "default": "",
             "maxLength": 2000,
             "title": "Url",
+            "type": "string"
+          },
+          "volume": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Volume",
             "type": "string"
           },
           "year": {
@@ -2341,6 +2381,12 @@
       },
       "ReferenceRead": {
         "properties": {
+          "article_number": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Article Number",
+            "type": "string"
+          },
           "authors": {
             "items": {
               "type": "string"
@@ -2385,9 +2431,21 @@
             ],
             "title": "Doi"
           },
+          "edition": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Edition",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
+            "type": "string"
+          },
+          "issue": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Issue",
             "type": "string"
           },
           "kind": {
@@ -2399,6 +2457,18 @@
               "other"
             ],
             "title": "Kind",
+            "type": "string"
+          },
+          "pages": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Pages",
+            "type": "string"
+          },
+          "publisher": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Publisher",
             "type": "string"
           },
           "revision": {
@@ -2420,6 +2490,12 @@
             "default": "",
             "maxLength": 2000,
             "title": "Url",
+            "type": "string"
+          },
+          "volume": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Volume",
             "type": "string"
           },
           "year": {
@@ -2524,6 +2600,12 @@
       },
       "ReferenceUpdate": {
         "properties": {
+          "article_number": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Article Number",
+            "type": "string"
+          },
           "authors": {
             "items": {
               "type": "string"
@@ -2563,10 +2645,22 @@
             ],
             "title": "Doi"
           },
+          "edition": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Edition",
+            "type": "string"
+          },
           "expected_revision": {
             "minimum": 1.0,
             "title": "Expected Revision",
             "type": "integer"
+          },
+          "issue": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Issue",
+            "type": "string"
           },
           "kind": {
             "enum": [
@@ -2579,6 +2673,18 @@
             "title": "Kind",
             "type": "string"
           },
+          "pages": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Pages",
+            "type": "string"
+          },
+          "publisher": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Publisher",
+            "type": "string"
+          },
           "title": {
             "maxLength": 500,
             "minLength": 1,
@@ -2589,6 +2695,12 @@
             "default": "",
             "maxLength": 2000,
             "title": "Url",
+            "type": "string"
+          },
+          "volume": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Volume",
             "type": "string"
           },
           "year": {

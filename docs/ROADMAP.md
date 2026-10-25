@@ -1,5 +1,9 @@
 # Focused implementation backlog
 
+## Completion work in isolation - 25 October 2026
+
+Branch feat/research-completion includes draft protection, named manuscript structures, matrix CSV/XLSX snapshots with provenance, and expanded verified publication details. These changes are not deployed to the shared runtime. See RELEASE_CHECKLIST.md for remaining work and required operational choices. Historical checkpoints below describe earlier implementations and can be stale.
+
 ## Latest completed slice
 
 Persistent Research Chat now stores project-scoped threads and immutable per-turn answer/source snapshots. Multi-turn context is limited to six prior turns and new claims still require citations from freshly retrieved evidence. Provider evaluation, budgets and metering remain next for this feature area.

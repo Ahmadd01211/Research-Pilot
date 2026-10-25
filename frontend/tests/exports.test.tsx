@@ -9,7 +9,7 @@ const projectId = '11111111-1111-4111-8111-111111111111';
 const exportId = '22222222-2222-4222-8222-222222222222';
 afterEach(() => vi.unstubAllGlobals());
 
-it('creates a reference CSV snapshot and offers the same saved file in history', async () => {
+it.each(['reference_csv', 'matrix_csv', 'matrix_xlsx'])('creates a %s snapshot and offers the same saved file in history', async kind => {
   let items: unknown[] = [];
   const mock = vi.fn((url: string, init?: RequestInit) => {
     if (url === '/api/v1/me') return Promise.resolve(Response.json({ display_name: 'Researcher', email: 'r@example.com' }));
@@ -28,9 +28,11 @@ it('creates a reference CSV snapshot and offers the same saved file in history',
   render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/projects/${projectId}/exports`]}><AppRoutes/></MemoryRouter></QueryClientProvider>);
   expect(await screen.findByRole('option', { name: 'Reference records · Excel' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Writing draft · Word' })).toBeInTheDocument();
-  await userEvent.setup().click(await screen.findByRole('button', { name: 'Create snapshot' }));
+  const ui = userEvent.setup();
+  await ui.selectOptions(screen.getByRole('combobox', { name: 'File type' }), kind);
+  await ui.click(await screen.findByRole('button', { name: 'Create snapshot' }));
   const call = mock.mock.calls.find(([url, init]) => url.endsWith('/exports') && init?.method === 'POST');
-  expect(JSON.parse(String(call?.[1]?.body))).toMatchObject({ kind: 'reference_csv', draft_id: null });
+  expect(JSON.parse(String(call?.[1]?.body))).toMatchObject({ kind, draft_id: null });
   expect((await screen.findAllByRole('link', { name: /Download/ }))[0]).toHaveAttribute('href', `/api/v1/projects/${projectId}/exports/${exportId}/download`);
 });
 

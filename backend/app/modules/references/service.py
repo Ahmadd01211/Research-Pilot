@@ -47,6 +47,12 @@ def _read(record: ReferenceRecord) -> ReferenceRead:
         "authors": record.authors, "year": record.year,
         "container_title": record.container_title, "doi": record.doi,
         "url": record.url, "document_id": record.document_id,
+        "volume": record.volume,
+        "issue": record.issue,
+        "pages": record.pages,
+        "article_number": record.article_number,
+        "publisher": record.publisher,
+        "edition": record.edition,
         "revision": record.revision, "created_at": record.created_at,
         "updated_at": record.updated_at,
     })
@@ -120,6 +126,10 @@ def _assign(record: ReferenceRecord, data: ReferenceInput, doi: str | None) -> N
     record.doi = doi
     record.url = data.url
     record.document_id = data.document_id
+    # Older clients do not send these fields; preserve metadata on their updates.
+    for name in ("volume", "issue", "pages", "article_number", "publisher", "edition"):
+        if name in data.model_fields_set or getattr(record, name, None) is None:
+            setattr(record, name, getattr(data, name))
 
 
 def _commit(db: Session) -> None:

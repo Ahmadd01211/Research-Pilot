@@ -121,3 +121,65 @@ def test_docx_draft_snapshot_is_readable_and_revision_checked(client):
         **payload, "request_id": str(uuid4()),
     }).status_code == 409
     assert client.get(base + "/exports/" + item["id"] + "/download").content == downloaded.content
+
+def test_matrix_snapshots_preserve_notes_provenance_and_history(client):
+    project, document_id = setup_source(client)
+    base = f"/api/v1/projects/{project['id']}"
+    row = client.post(base + "/matrix", headers=csrf(client), json={
+        "document_id": document_id,
+        "cells": [{"field": "method", "value": "=Researcher note", "chunk_id": "matrix-source-1"}],
+    })
+    assert row.status_code == 201, row.text
+    downloads = []
+    for kind in ("matrix_csv", "matrix_xlsx"):
+        payload = {"kind": kind, "request_id": str(uuid4())}
+        created = client.post(base + "/exports", headers=csrf(client), json=payload)
+        assert created.status_code == 201, created.text
+        item = created.json()
+        response = client.get(base + "/exports/" + item["id"] + "/download")
+        downloads.append((item["id"], response.content))
+        assert client.post(base + "/exports", headers=csrf(client), json=payload).json()["id"] == item["id"]
+        if kind == "matrix_csv":
+            assert b"'=Researcher note" in response.content
+            assert b"matrix-source-1" in response.content
+            assert b"passage-1" in response.content
+        else:
+            workbook = load_workbook(io.BytesIO(response.content))
+            assert workbook["Literature matrix"]["D2"].value == "=Researcher note"
+            assert workbook["Literature matrix"]["D2"].data_type == "s"
+            assert workbook["Source provenance"]["G2"].value == 2
+            assert workbook["Source provenance"]["H2"].value == "matrix-source-1"
+            assert workbook["Source provenance"]["I2"].value == row.json()["cells"][0]["source_sha256"]
+    assert client.post(base + "/matrix/" + row.json()["id"] + "/remove",
+                       headers=csrf(client), json={"expected_revision": 1}).status_code == 204
+    for export_id, content in downloads:
+        assert client.get(base + "/exports/" + export_id + "/download").content == content
+    register(client, "matrix-export-foreign@example.com")
+    login(client, "matrix-export-foreign@example.com")
+    assert client.post(base + "/exports", headers=csrf(client), json={
+        "kind": "matrix_xlsx", "request_id": str(uuid4()),
+    }).status_code == 404
+
+def test_matrix_xlsx_rejects_silent_metadata_truncation_but_csv_keeps_it(client):
+    from app.modules.documents.models import EvidenceChunk
+
+    project, document_id = setup_source(client)
+    base = f"/api/v1/projects/{project['id']}"
+    with client.app.state.session_factory() as db:
+        chunk = db.get(EvidenceChunk, "matrix-source-1")
+        chunk.source_metadata = {"annotation": "a" * 33000}
+        db.commit()
+    assert client.post(base + "/matrix", headers=csrf(client), json={
+        "document_id": document_id,
+        "cells": [{"field": "method", "value": "Survey", "chunk_id": "matrix-source-1"}],
+    }).status_code == 201
+    response = client.post(base + "/exports", headers=csrf(client), json={
+        "kind": "matrix_xlsx", "request_id": str(uuid4()),
+    })
+    assert response.status_code == 413
+    csv_export = client.post(base + "/exports", headers=csrf(client), json={
+        "kind": "matrix_csv", "request_id": str(uuid4()),
+    })
+    assert csv_export.status_code == 201
+    download = client.get(base + "/exports/" + csv_export.json()["id"] + "/download")
+    assert b"a" * 33000 in download.content

@@ -1,5 +1,9 @@
 # ResearchPilot project status
 
+## Continued product phases - 25 October 2026 (isolated, not deployed)
+
+Branch feat/research-completion adds named article/review draft structures, outline navigation, matrix CSV/XLSX snapshots with immutable source identities, and verified journal/publisher metadata through form/API/database/preview/export. Migrations 0016 and 0017 are additive; readiness uses the shipped migration head rather than a copied revision string. Final backend suite: 156 passed; changed backend lint and strict mypy pass. Frontend: 85 tests, lint, typecheck and production build pass. Full backend lint still has two pre-existing extraction errors; no extraction file was changed. Known upstream test and bundle warnings remain. The dedicated rp_completion_test environment uses disposable test data; the running app is unchanged. See docs/RELEASE_CHECKLIST.md for outstanding product and release work.
+
 ## Draft protection - 25 October 2026
 
 Unsaved writing now survives query refreshes and failed saves. In-app navigation and Back/Forward require an explicit discard choice; reload/close request the browser warning. Conflicts show local and current server text with explicit choices; keeping local text requires a separate revision-checked save. Typing during a save is retained. No browser draft storage or crash recovery is claimed. The app entry point uses React Router's data router around existing routes. Frontend 80 tests, lint, typecheck and build passed (existing bundle-size warning). No API, migration or runtime configuration changes. Work is isolated on feat/draft-protection from 9d4210a; shared runtime is unchanged. See docs/learning/14-writing-drafts.md.

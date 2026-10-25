@@ -1246,7 +1246,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "reference_csv" | "reference_xlsx" | "draft_markdown" | "draft_docx";
+            kind: "reference_csv" | "reference_xlsx" | "matrix_csv" | "matrix_xlsx" | "draft_markdown" | "draft_docx";
             /**
              * Request Id
              * Format: uuid
@@ -1282,7 +1282,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "reference_csv" | "reference_xlsx" | "draft_markdown" | "draft_docx";
+            kind: "reference_csv" | "reference_xlsx" | "matrix_csv" | "matrix_xlsx" | "draft_markdown" | "draft_docx";
             /** Sha256 */
             sha256: string;
         };
@@ -1664,6 +1664,11 @@ export interface components {
         };
         /** ReferenceInput */
         ReferenceInput: {
+            /**
+             * Article Number
+             * @default
+             */
+            article_number: string;
             /** Authors */
             authors: string[];
             /**
@@ -1676,10 +1681,30 @@ export interface components {
             /** Doi */
             doi?: string | null;
             /**
+             * Edition
+             * @default
+             */
+            edition: string;
+            /**
+             * Issue
+             * @default
+             */
+            issue: string;
+            /**
              * Kind
              * @enum {string}
              */
             kind: "journal" | "book" | "conference" | "preprint" | "other";
+            /**
+             * Pages
+             * @default
+             */
+            pages: string;
+            /**
+             * Publisher
+             * @default
+             */
+            publisher: string;
             /** Title */
             title: string;
             /**
@@ -1687,6 +1712,11 @@ export interface components {
              * @default
              */
             url: string;
+            /**
+             * Volume
+             * @default
+             */
+            volume: string;
             /** Year */
             year?: number | null;
         };
@@ -1697,6 +1727,11 @@ export interface components {
         };
         /** ReferenceRead */
         ReferenceRead: {
+            /**
+             * Article Number
+             * @default
+             */
+            article_number: string;
             /** Authors */
             authors: string[];
             /**
@@ -1714,15 +1749,35 @@ export interface components {
             /** Doi */
             doi?: string | null;
             /**
+             * Edition
+             * @default
+             */
+            edition: string;
+            /**
              * Id
              * Format: uuid
              */
             id: string;
             /**
+             * Issue
+             * @default
+             */
+            issue: string;
+            /**
              * Kind
              * @enum {string}
              */
             kind: "journal" | "book" | "conference" | "preprint" | "other";
+            /**
+             * Pages
+             * @default
+             */
+            pages: string;
+            /**
+             * Publisher
+             * @default
+             */
+            publisher: string;
             /** Revision */
             revision: number;
             /** Title */
@@ -1737,6 +1792,11 @@ export interface components {
              * @default
              */
             url: string;
+            /**
+             * Volume
+             * @default
+             */
+            volume: string;
             /** Year */
             year?: number | null;
         };
@@ -1769,6 +1829,11 @@ export interface components {
         };
         /** ReferenceUpdate */
         ReferenceUpdate: {
+            /**
+             * Article Number
+             * @default
+             */
+            article_number: string;
             /** Authors */
             authors: string[];
             /**
@@ -1780,13 +1845,33 @@ export interface components {
             document_id?: string | null;
             /** Doi */
             doi?: string | null;
+            /**
+             * Edition
+             * @default
+             */
+            edition: string;
             /** Expected Revision */
             expected_revision: number;
+            /**
+             * Issue
+             * @default
+             */
+            issue: string;
             /**
              * Kind
              * @enum {string}
              */
             kind: "journal" | "book" | "conference" | "preprint" | "other";
+            /**
+             * Pages
+             * @default
+             */
+            pages: string;
+            /**
+             * Publisher
+             * @default
+             */
+            publisher: string;
             /** Title */
             title: string;
             /**
@@ -1794,6 +1879,11 @@ export interface components {
              * @default
              */
             url: string;
+            /**
+             * Volume
+             * @default
+             */
+            volume: string;
             /** Year */
             year?: number | null;
         };

@@ -144,3 +144,22 @@ def test_apa_same_author_year_grouping_uses_complete_ordered_author_lists(client
                for item in client.get(base + "/bibliography").json()["items"]
                if any("letter suffixes" in w for w in item["warnings"])}
     assert flagged == {"Three", "Four"}
+
+def test_verified_journal_details_are_formatted_without_inventing_missing_fields():
+    source = Source("journal", "Study", ["Scholar, Ada"], 2024, "Journal",
+                    volume="12", issue="3", pages="45-67")
+    apa = format_source(source, "apa7")
+    assert "Journal, 12(3), 45-67." in apa.text
+    assert "12" in italic(apa)
+    assert "Journal, vol. 12, no. 3, 2024, pp. 45-67." in format_source(source, "mla9").text
+    assert "Journal 12, no. 3 (2024): 45-67." in format_source(source, "chicago18").text
+    article = Source("journal", "Study", ["Scholar, Ada"], 2024, "Journal", article_number="e123")
+    assert "Article e123" in format_source(article, "apa7").text
+
+
+def test_book_publisher_and_edition_are_used_only_when_stored():
+    source = Source("book", "Book", ["Scholar, Ada"], 2024,
+                    publisher="Press", edition="2nd ed.")
+    assert "Book (2nd ed.). Press." in format_source(source, "apa7").text
+    assert "Book. 2nd ed., Press, 2024." in format_source(source, "mla9").text
+    assert "Book. 2nd ed. Press, 2024." in format_source(source, "chicago18").text
