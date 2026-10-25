@@ -9,6 +9,8 @@ from app.modules.references import formatting, service
 from app.modules.references.schemas import (
     Bibliography,
     DuplicateMatches,
+    ReferenceImportPreview,
+    ReferenceImportRequest,
     ReferenceInput,
     ReferencePage,
     ReferenceRead,
@@ -31,6 +33,13 @@ def list_references(project_id: UUID, user: User = Depends(current_user),
 def create_reference(project_id: UUID, data: ReferenceInput, user: User = Depends(current_user),
                      db: Session = Depends(database)) -> ReferenceRead:
     return service.create(db, user.id, project_id, data)
+
+
+@router.post("/import/preview", response_model=ReferenceImportPreview)
+def preview_reference_import(project_id: UUID, data: ReferenceImportRequest,
+                             user: User = Depends(current_user),
+                             db: Session = Depends(database)) -> ReferenceImportPreview:
+    return service.preview_import(db, user.id, project_id, data)
 
 
 @router.get("/duplicates", response_model=DuplicateMatches)

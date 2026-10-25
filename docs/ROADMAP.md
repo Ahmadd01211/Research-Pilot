@@ -6,6 +6,8 @@ Branch feat/research-completion includes draft protection, named manuscript stru
 
 ## Latest completed slice
 
+Reference Manager import preview accepts bounded pasted BibTeX and RIS, maps common bibliographic fields without network access, flags omitted/unresolved fields, and routes each candidate through the existing review and duplicate-checking editor before save. Parser and API owner-scope/no-write checks are included. Automatic DOI metadata lookup and full interchange-format fidelity remain out of scope.
+
 Persistent Research Chat now stores project-scoped threads and immutable per-turn answer/source snapshots. Multi-turn context is limited to six prior turns and new claims still require citations from freshly retrieved evidence. Provider evaluation, budgets and metering remain next for this feature area.
 
 1. Completed: approved React/TypeScript/Vite migration, archived Next scaffold, real account foundation and generated API types; review all twelve user reference images.

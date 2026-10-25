@@ -71,6 +71,34 @@ class DuplicateMatches(BaseModel):
     items: list[ReferenceRead]
 
 
+class ReferenceImportRequest(BaseModel):
+    format: Literal["bibtex", "ris"]
+    content: str = Field(min_length=1, max_length=100_000)
+
+
+class ReferenceImportItem(BaseModel):
+    kind: ReferenceKind
+    title: str
+    authors: list[str]
+    year: int | None
+    container_title: str
+    volume: str
+    issue: str
+    pages: str
+    article_number: str
+    publisher: str
+    edition: str
+    doi: str | None
+    url: str
+    warnings: list[str]
+
+
+class ReferenceImportPreview(BaseModel):
+    format: Literal["bibtex", "ris"]
+    preview_only: Literal[True]
+    items: list[ReferenceImportItem]
+
+
 class BibliographySegment(BaseModel):
     text: str
     italic: bool

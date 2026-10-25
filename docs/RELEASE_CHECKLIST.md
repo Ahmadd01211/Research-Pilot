@@ -8,12 +8,13 @@ Updated 25 October 2026. This is a status checklist, not a claim that the produc
 - Named blank/article/literature-review starters; selectable outline and live writing counts.
 - Immutable matrix CSV/XLSX exports, comparison view and source-provenance sheet.
 - Verified volume, issue, pages, article number, publisher and edition metadata; form, formatting preview and raw exports.
+- Offline BibTeX/RIS import preview with bounded input, conservative field parsing, and per-record researcher review through the normal duplicate-checking editor.
 - Additive migrations 0016/0017 and readiness derived from the shipped Alembic head.
 - Isolated backend tests and frontend component/build checks. No shared runtime changes.
 
 ## Remaining product phases
 
-- Reference import: DOI/BibTeX/RIS previews, explicit researcher acceptance and duplicate review.
+- Reference import: DOI metadata lookup remains unimplemented; BibTeX/RIS imports require per-record researcher acceptance and duplicate review.
 - Citation completeness: editors/full dates/chapters, disambiguation and formatted manuscript citation output. Current previews remain limited.
 - Evidence-linked writing assistance: explicit suggestion acceptance and provider evaluation before enabling generated prose.
 - Literature synthesis: source-grounded extraction/suggestions, comparison coverage and researcher approval.

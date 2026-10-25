@@ -731,6 +731,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/references/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Reference Import */
+        post: operations["preview_reference_import_api_v1_projects__project_id__references_import_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/references/settings": {
         parameters: {
             query?: never;
@@ -1661,6 +1678,65 @@ export interface components {
             width: number;
             /** Words */
             words: components["schemas"]["WordAnchor"][];
+        };
+        /** ReferenceImportItem */
+        ReferenceImportItem: {
+            /** Article Number */
+            article_number: string;
+            /** Authors */
+            authors: string[];
+            /** Container Title */
+            container_title: string;
+            /** Doi */
+            doi: string | null;
+            /** Edition */
+            edition: string;
+            /** Issue */
+            issue: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "journal" | "book" | "conference" | "preprint" | "other";
+            /** Pages */
+            pages: string;
+            /** Publisher */
+            publisher: string;
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
+            /** Volume */
+            volume: string;
+            /** Warnings */
+            warnings: string[];
+            /** Year */
+            year: number | null;
+        };
+        /** ReferenceImportPreview */
+        ReferenceImportPreview: {
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "bibtex" | "ris";
+            /** Items */
+            items: components["schemas"]["ReferenceImportItem"][];
+            /**
+             * Preview Only
+             * @constant
+             */
+            preview_only: true;
+        };
+        /** ReferenceImportRequest */
+        ReferenceImportRequest: {
+            /** Content */
+            content: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "bibtex" | "ris";
         };
         /** ReferenceInput */
         ReferenceInput: {
@@ -3929,6 +4005,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DuplicateMatches"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_reference_import_api_v1_projects__project_id__references_import_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferenceImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceImportPreview"];
                 };
             };
             /** @description Validation Error */

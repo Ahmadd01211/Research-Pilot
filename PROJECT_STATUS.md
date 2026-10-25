@@ -1,8 +1,8 @@
 # ResearchPilot project status
 
-## Continued product phases - 25 October 2026 (isolated, not deployed)
+## Continued product phases - 26 October 2026 (isolated, not deployed)
 
-Branch feat/research-completion adds named article/review draft structures, outline navigation, matrix CSV/XLSX snapshots with immutable source identities, and verified journal/publisher metadata through form/API/database/preview/export. Migrations 0016 and 0017 are additive; readiness uses the shipped migration head rather than a copied revision string. Final backend suite: 156 passed; changed backend lint and strict mypy pass. Frontend: 85 tests, lint, typecheck and production build pass. Full backend lint still has two pre-existing extraction errors; no extraction file was changed. Known upstream test and bundle warnings remain. The dedicated rp_completion_test environment uses disposable test data; the running app is unchanged. See docs/RELEASE_CHECKLIST.md for outstanding product and release work.
+Branch feat/research-completion adds protected writing drafts, named manuscript structures, matrix CSV/XLSX snapshots with immutable source identities, verified publication details, offline BibTeX/RIS import previews and two authorized PDF extraction lint fixes. Migrations 0016 and 0017 are additive; readiness uses the shipped migration head rather than a copied revision string. Final checks: 159 backend tests, 85 frontend tests, full backend Ruff, strict mypy, frontend lint/typecheck and production build all pass. The dedicated rp_completion_test environment uses disposable test data; the running app is unchanged. Paid provider calls and permanent deletion remain disabled. See docs/RELEASE_CHECKLIST.md for outstanding product and release work.
 
 ## Draft protection - 25 October 2026
 

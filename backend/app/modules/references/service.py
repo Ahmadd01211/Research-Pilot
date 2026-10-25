@@ -12,9 +12,12 @@ from sqlalchemy.orm import Session
 
 from app.modules.documents.models import Document
 from app.modules.projects.service import owned as owned_project
+from app.modules.references.imports import parse_import
 from app.modules.references.models import ReferenceRecord, ReferenceSettings
 from app.modules.references.schemas import (
     DuplicateMatches,
+    ReferenceImportPreview,
+    ReferenceImportRequest,
     ReferenceInput,
     ReferencePage,
     ReferenceRead,
@@ -99,6 +102,17 @@ def list_references(db: Session, owner: UUID, project_id: UUID) -> ReferencePage
         ReferenceRecord.project_id == project_id, ReferenceRecord.deleted_at.is_(None),
     ).order_by(ReferenceRecord.created_at.desc(), ReferenceRecord.id.desc()).limit(MAX_REFERENCES)).all()
     return ReferencePage(items=[_read(record) for record in records])
+
+
+def preview_import(db: Session, owner: UUID, project_id: UUID,
+                  data: ReferenceImportRequest) -> ReferenceImportPreview:
+    # Import preview only reads source text and the owned project. It never
+    # writes reference records or calls external metadata providers.
+    owned_project(db, owner, project_id)
+    return ReferenceImportPreview(
+        format=data.format, preview_only=True,
+        items=parse_import(data.format, data.content),
+    )
 
 
 def duplicates(db: Session, owner: UUID, project_id: UUID, title: str,

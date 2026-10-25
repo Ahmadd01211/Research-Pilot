@@ -2241,6 +2241,166 @@
         "title": "ReaderLayout",
         "type": "object"
       },
+      "ReferenceImportItem": {
+        "properties": {
+          "article_number": {
+            "title": "Article Number",
+            "type": "string"
+          },
+          "authors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Authors",
+            "type": "array"
+          },
+          "container_title": {
+            "title": "Container Title",
+            "type": "string"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "edition": {
+            "title": "Edition",
+            "type": "string"
+          },
+          "issue": {
+            "title": "Issue",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "journal",
+              "book",
+              "conference",
+              "preprint",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "pages": {
+            "title": "Pages",
+            "type": "string"
+          },
+          "publisher": {
+            "title": "Publisher",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "volume": {
+            "title": "Volume",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          }
+        },
+        "required": [
+          "kind",
+          "title",
+          "authors",
+          "year",
+          "container_title",
+          "volume",
+          "issue",
+          "pages",
+          "article_number",
+          "publisher",
+          "edition",
+          "doi",
+          "url",
+          "warnings"
+        ],
+        "title": "ReferenceImportItem",
+        "type": "object"
+      },
+      "ReferenceImportPreview": {
+        "properties": {
+          "format": {
+            "enum": [
+              "bibtex",
+              "ris"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReferenceImportItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "preview_only": {
+            "const": true,
+            "title": "Preview Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "format",
+          "preview_only",
+          "items"
+        ],
+        "title": "ReferenceImportPreview",
+        "type": "object"
+      },
+      "ReferenceImportRequest": {
+        "properties": {
+          "content": {
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "format": {
+            "enum": [
+              "bibtex",
+              "ris"
+            ],
+            "title": "Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "format",
+          "content"
+        ],
+        "title": "ReferenceImportRequest",
+        "type": "object"
+      },
       "ReferenceInput": {
         "properties": {
           "article_number": {
@@ -6279,6 +6439,59 @@
           }
         },
         "summary": "Find Duplicates",
+        "tags": [
+          "references"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/references/import/preview": {
+      "post": {
+        "operationId": "preview_reference_import_api_v1_projects__project_id__references_import_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferenceImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceImportPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Reference Import",
         "tags": [
           "references"
         ]

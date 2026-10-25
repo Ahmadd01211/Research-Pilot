@@ -29,7 +29,6 @@ def front_matter(words: list[dict[str, Any]], rotation: int) -> list[dict[str, A
             for token in [word["text"].casefold()]
         )
     ]
-    abstract_prose_top = min(prose_lines) if prose_lines else abstract_bottom
     abstract_line_keys = set(prose_lines)
     introductions = [
         w
