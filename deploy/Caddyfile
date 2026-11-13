@@ -1,0 +1,13 @@
+{
+	email {$RP_ACME_EMAIL}
+}
+
+{$RP_DOMAIN} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	# PDF uploads are capped at 20 MB by Nginx and the API; reject larger bodies here first.
+	request_body {
+		max_size 21MB
+	}
+	reverse_proxy web:8080
+}

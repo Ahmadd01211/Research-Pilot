@@ -15,6 +15,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.responses import Response
 
 from app.core.config import Settings, get_settings
+from app.infrastructure.mail import sender_for
 from app.modules.documents.router import router as documents_router
 from app.modules.documents.search_router import router as evidence_router
 from app.modules.exports.router import router as exports_router
@@ -49,6 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="ResearchPilot API", version="0.1.0", lifespan=lifespan)
     app.state.settings = config
+    app.state.mail = sender_for(config)
 
     def problem(
         request: Request, status: int, detail: str, headers: Mapping[str, str] | None = None
@@ -106,8 +108,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def ready() -> dict[str, str]:
         def probe() -> None:
             with app.state.engine.connect() as connection:
-                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0015"
+                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0018"
                 connection.execute(text("SELECT id, token_hash, csrf_hash FROM sessions LIMIT 0"))
+                connection.execute(
+                    text("SELECT id, token_hash, consumed_at FROM password_reset_tokens LIMIT 0")
+                )
                 connection.execute(
                     text("SELECT id, owner_id, revision FROM research_projects LIMIT 0")
                 )

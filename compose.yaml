@@ -11,9 +11,20 @@ x-backend: &backend
     RP_ANSWER_ENABLED: ${RP_ANSWER_ENABLED:-false}
     RP_ANSWER_MODEL: ${RP_ANSWER_MODEL:-gemini-3.8-flash}
     RP_GOOGLE_API_KEY: ${RP_GOOGLE_API_KEY:-}
+    # Defaults deliver password-reset email to the local Mailpit inbox only.
+    RP_SMTP_HOST: ${RP_SMTP_HOST:-mail}
+    RP_SMTP_PORT: ${RP_SMTP_PORT:-1025}
+    RP_SMTP_SECURITY: ${RP_SMTP_SECURITY:-none}
+    RP_SMTP_USERNAME: ${RP_SMTP_USERNAME:-}
+    RP_SMTP_PASSWORD: ${RP_SMTP_PASSWORD:-}
+    RP_MAIL_FROM: ${RP_MAIL_FROM:-ResearchPilot <no-reply@researchpilot.local>}
   init: true
   security_opt: [no-new-privileges:true]
 services:
+  mail:
+    image: axllent/mailpit:v1.31.6
+    # Development inbox: catches all outgoing mail; nothing reaches real addresses.
+    ports: ['127.0.0.1:8025:8025']
   db:
     image: pgvector/pgvector:pg17
     environment:

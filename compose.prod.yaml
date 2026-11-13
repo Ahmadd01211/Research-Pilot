@@ -1,0 +1,49 @@
+# Production overlay for a single public server (see docs/DEPLOYMENT.md).
+#   docker compose -f compose.yaml -f compose.prod.yaml up -d --build
+# Caddy is the only public entry point (ports 80/443) and obtains HTTPS certificates
+# automatically. The API, database, Redis and web container stay on the private network.
+x-production: &production
+  RP_ENVIRONMENT: production
+  RP_PUBLIC_ORIGIN: https://${RP_DOMAIN:?Set RP_DOMAIN in .env}
+  RP_COOKIE_SECURE: 'true'
+  RP_SMTP_HOST: ${RP_SMTP_HOST:?Set RP_SMTP_HOST in .env}
+  RP_SMTP_PORT: ${RP_SMTP_PORT:-587}
+  RP_SMTP_SECURITY: ${RP_SMTP_SECURITY:-starttls}
+  RP_MAIL_FROM: ${RP_MAIL_FROM:?Set RP_MAIL_FROM in .env}
+services:
+  db:
+    restart: unless-stopped
+  redis:
+    restart: unless-stopped
+  migrate:
+    environment: *production
+  api:
+    environment: *production
+    restart: unless-stopped
+  dispatcher:
+    environment: *production
+    restart: unless-stopped
+  worker:
+    environment: *production
+    restart: unless-stopped
+  web:
+    restart: unless-stopped
+  mail:
+    # Mailpit is a development inbox only; it never starts in production.
+    profiles: [local-mail]
+  caddy:
+    image: caddy:2.11.6
+    restart: unless-stopped
+    environment:
+      RP_DOMAIN: ${RP_DOMAIN:?Set RP_DOMAIN in .env}
+      RP_ACME_EMAIL: ${RP_ACME_EMAIL:?Set RP_ACME_EMAIL in .env}
+    ports: ['80:80', '443:443', '443:443/udp']
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web: {condition: service_healthy}
+volumes:
+  caddy_data:
+  caddy_config:

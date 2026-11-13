@@ -8,10 +8,14 @@ Prerequisites: Docker Desktop with Linux containers, Node.js 24 LTS and Git. The
 
 1. Copy `.env.example` to `.env`, replacing its password with a random local value.
 2. `docker compose up --build -d`
-3. Open http://localhost:3100/register. API OpenAPI: http://localhost:8100/docs.
+3. Open http://localhost:3100/register. API OpenAPI: http://localhost:8100/docs. Development email (password reset links): http://localhost:8025.
 4. Register with a synthetic email and a password of at least 12 characters, edit your profile, reload and sign out.
 
 Ports and named volumes are independent of the old application. PostgreSQL and Redis have no host ports. Stop services with `docker compose stop`. Never remove application volumes to fix a migration.
+
+## Public demo deployment
+
+`docs/DEPLOYMENT.md` deploys the full stack to one Oracle Cloud Always Free ARM server with `compose.prod.yaml`: Caddy for automatic HTTPS, real SMTP for password reset, automatic restarts and a backup script.
 
 ## Verify
 

@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -22,6 +23,14 @@ class Settings(BaseSettings):
     embedding_dimensions: int = 768
     answer_enabled: bool = False
     answer_model: str = "gemini-3.8-flash"
+    # Password-reset email. Without a host, recovery reports itself unavailable.
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_security: Literal["starttls", "ssl", "none"] = "starttls"
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    mail_from: str = "ResearchPilot <no-reply@researchpilot.local>"
+    password_reset_minutes: int = 30
 
     @model_validator(mode="after")
     def validate_environment(self) -> "Settings":
@@ -31,8 +40,12 @@ class Settings(BaseSettings):
             not self.cookie_secure or not self.public_origin.startswith("https://")
         ):
             raise ValueError("Production requires HTTPS and secure cookies")
+        if self.environment == "production" and (not self.smtp_host or self.smtp_security == "none"):
+            raise ValueError("Production requires encrypted SMTP for password recovery")
         if self.session_hours < 1 or self.session_idle_minutes < 1:
             raise ValueError("Session expiry must be positive")
+        if not 5 <= self.password_reset_minutes <= 120:
+            raise ValueError("Password reset expiry must be between 5 and 120 minutes")
         if self.embedding_model != "gemini-embedding-2" or self.embedding_dimensions != 768:
             raise ValueError("Unsupported embedding model or dimensions")
         if self.embedding_enabled and (

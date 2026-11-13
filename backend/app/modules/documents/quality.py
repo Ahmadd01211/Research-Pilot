@@ -301,7 +301,7 @@ def _caption_crosses_columns(words: list[dict[str, Any]], indices: list[int]) ->
         ordered = sorted(line, key=lambda i: words[i]["box"][0])
         if any(
             words[right]["box"][0] - words[left]["box"][2] > 0.12
-            for left, right in zip(ordered, ordered[1:])
+            for left, right in zip(ordered, ordered[1:], strict=False)
         ):
             return True
     return False

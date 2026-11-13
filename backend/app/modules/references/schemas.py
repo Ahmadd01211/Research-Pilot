@@ -83,3 +83,35 @@ class Bibliography(BaseModel):
     preview: Literal[True]
     limitations: list[str]
     items: list[BibliographyEntry]
+
+
+class ImportPreviewInput(BaseModel):
+    format: Literal["bibtex", "ris"]
+    text: str = Field(min_length=1, max_length=1_000_000)
+
+
+class ImportCandidate(BaseModel):
+    """A parsed entry for researcher review; fields are unvalidated until imported."""
+    index: int
+    label: str
+    kind: ReferenceKind
+    title: str
+    authors: list[str]
+    year: int | None
+    container_title: str
+    doi: str | None
+    url: str
+    importable: bool
+    errors: list[str]
+    warnings: list[str]
+    duplicate_of: UUID | None
+
+
+class ImportPreview(BaseModel):
+    items: list[ImportCandidate]
+    remaining_capacity: int
+
+
+class ReferenceImportInput(BaseModel):
+    request_id: UUID
+    items: list[ReferenceInput] = Field(min_length=1, max_length=500)

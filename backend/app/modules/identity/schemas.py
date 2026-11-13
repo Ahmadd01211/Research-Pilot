@@ -33,6 +33,23 @@ class ProfileInput(BaseModel):
         return RegisterInput.clean_name(value)
 
 
+class PasswordChangeInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    current_password: SecretStr = Field(min_length=1, max_length=128)
+    new_password: SecretStr = Field(min_length=12, max_length=128)
+
+
+class PasswordForgotInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: EmailStr
+
+
+class PasswordResetInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    token: SecretStr = Field(min_length=20, max_length=128)
+    new_password: SecretStr = Field(min_length=12, max_length=128)
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID

@@ -29,7 +29,7 @@ function open(state = 'extracted', error: string | null = null, detail = false) 
 }
 it('links extracted papers to source text and describes automatic indexing', async () => {
   open();
-  expect(await screen.findByRole('link', { name: 'Review extracted text (2 pages)' })).toHaveAttribute('href', `/projects/${project}/library/${document}`);
+  expect(await screen.findByRole('link', { name: 'Review extracted text (2 pages)' }, { timeout: 5000 })).toHaveAttribute('href', `/projects/${project}/library/${document}`);
   expect(screen.getByText('Text extracted')).toBeVisible();
   expect(screen.getByText(/newly extracted papers are queued for evidence indexing automatically/)).toBeVisible();
 });

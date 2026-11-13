@@ -13,3 +13,13 @@ To review: open **Exports** from a project, create a reference CSV, download it,
 The same owner-scoped, revision-checked and immutable export path also creates XLSX reference records and DOCX writing drafts. Migration 0015 extends the export-kind constraint. The XLSX workbook has one References sheet, a frozen header and filters. Text cells stay literal strings, including titles beginning with `=`, so they do not become formulas. CSV and XLSX contain raw metadata, not formatted citations.
 
 DOCX preserves the draft title and text in editable paragraphs. Lines beginning with `#` or `##` become headings; other Markdown syntax and citation markers stay literal. It is an editable draft file, not a publication-ready manuscript. Both new formats retain the 2 MB per-file and 100 MB per-project history limits. Export history and downloads preserve the original bytes after later edits. Retention and purge remain release work.
+
+## Literature matrix snapshots
+
+`matrix_csv` and `matrix_xlsx` export the active matrix rows in the same order as the Literature Matrix page. They use the same snapshot path, so ownership, archived-project rejection, request-ID idempotency, immutable bytes and the 2 MB / 100 MB limits are unchanged. Migration 0016 extends the export-kind constraint. Matrix exports reject a draft ID or revision.
+
+The CSV is wide: one row per paper, with each field (research question, method, sample/context, finding, limitation) next to the physical PDF page its note cites. It matches the on-screen comparison and opens directly in a spreadsheet. Formula-looking notes are prefixed, as in the reference CSV. A CSV holds a single table, so it carries page numbers but not full provenance.
+
+The XLSX has two sheets. **Matrix** has the same wide layout, with a frozen paper column, filters and wrapped text. **Sources** is long-form, with one line per cited note: paper, field, note, PDF page, source chunk ID, original file SHA-256, reader version and matrix row ID. That is enough to trace any exported note back to the exact retained source passage after the paper is reprocessed. Notes are literal text cells, never formulas. Only each field's current note is exported; superseded versions remain in the database for gap provenance but are not part of the snapshot.
+
+Blank fields stay blank. A blank cell means the researcher has not recorded that field, not that the paper lacks it.

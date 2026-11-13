@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.security import hash_token
+from app.infrastructure.mail import MailSender
 from app.modules.identity.models import User, UserSession
 
 
@@ -24,6 +25,11 @@ def database(request: Request) -> Iterator[Session]:
 
 def redis_for(request: Request) -> Redis:
     value: Redis = request.app.state.redis
+    return value
+
+
+def mail_for(request: Request) -> MailSender | None:
+    value: MailSender | None = request.app.state.mail
     return value
 
 

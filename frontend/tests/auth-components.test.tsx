@@ -7,12 +7,38 @@ import { AppRoutes } from '../src/app/router';
 
 afterEach(() => vi.unstubAllGlobals());
 const user = { id: 'synthetic-user', display_name: 'Researcher', email: 'researcher@example.com' };
-function open(path: string) {
+function open(path: string, state?: unknown) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[path]}><AppRoutes/></MemoryRouter></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[{ pathname: path, state }]}><AppRoutes/></MemoryRouter></QueryClientProvider>);
   return client;
 }
 describe('identity flows', () => {
+  it.each(['https://example.com', '//example.com', '/projects\\example.com'])('ignores an unsafe sign-in destination %s', async returnTo => {
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      if (url.endsWith('/auth/csrf')) return Promise.resolve(Response.json({ csrf_token: 'synthetic' }));
+      if (url.endsWith('/auth/login')) return Promise.resolve(Response.json(user));
+      return Promise.resolve(Response.json({ items: [], total: 0 }));
+    }));
+    open('/login', { returnTo });
+    const ui = userEvent.setup();
+    await ui.type(screen.getByLabelText('Email address'), user.email);
+    await ui.type(screen.getByLabelText('Password'), 'valid-password-123');
+    await ui.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByRole('heading', { name: 'Welcome, Researcher.' })).toBeVisible();
+  });
+  it('returns to the requested workspace page after signing in', async () => {
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      if (url.endsWith('/auth/csrf')) return Promise.resolve(Response.json({ csrf_token: 'synthetic' }));
+      if (url.endsWith('/auth/login')) return Promise.resolve(Response.json(user));
+      return Promise.resolve(Response.json({ detail: 'Please sign in' }, { status: 401 }));
+    }));
+    open('/profile');
+    const ui = userEvent.setup();
+    await ui.type(await screen.findByLabelText('Email address'), user.email);
+    await ui.type(screen.getByLabelText('Password'), 'valid-password-123');
+    await ui.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByRole('heading', { name: 'Your profile' })).toBeVisible();
+  });
   it('login validates with its own schema and surfaces a safe provider error', async () => {
     const mock = vi.fn().mockResolvedValueOnce(Response.json({ csrf_token: 'synthetic' })).mockResolvedValueOnce(Response.json({ detail: 'Email or password is incorrect' }, { status: 401 })); vi.stubGlobal('fetch', mock);
     open('/login'); const ui = userEvent.setup();

@@ -54,3 +54,29 @@ it('sends the selected draft revision for a Word snapshot', async () => {
   const call = mock.mock.calls.find(([url, init]) => url.endsWith('/exports') && init?.method === 'POST');
   expect(JSON.parse(String(call?.[1]?.body))).toMatchObject({ kind: 'draft_docx', draft_id: draftId, expected_revision: 3 });
 });
+
+it('creates a literature matrix Excel snapshot without a draft and labels it in history', async () => {
+  let items: unknown[] = [];
+  const mock = vi.fn((url: string, init?: RequestInit) => {
+    if (url === '/api/v1/me') return Promise.resolve(Response.json({ display_name: 'Researcher', email: 'r@example.com' }));
+    if (url === '/api/v1/auth/csrf') return Promise.resolve(Response.json({ csrf_token: 'synthetic' }));
+    if (url.endsWith('/drafts')) return Promise.resolve(Response.json({ items: [] }));
+    if (url.includes('/exports?offset=')) return Promise.resolve(Response.json({ items, total: items.length }));
+    if (url.endsWith('/exports') && init?.method === 'POST') {
+      items = [{ id: exportId, filename: 'matrix-11111111.xlsx', kind: 'matrix_xlsx', byte_size: 4096, created_at: '2026-10-27T00:00:00Z' }];
+      return Promise.resolve(Response.json(items[0], { status: 201 }));
+    }
+    return Promise.resolve(Response.json({ id: projectId, title: 'AI adoption', archived_at: null }));
+  });
+  vi.stubGlobal('fetch', mock);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/projects/${projectId}/exports`]}><AppRoutes/></MemoryRouter></QueryClientProvider>);
+  const ui = userEvent.setup();
+  await ui.selectOptions(await screen.findByRole('combobox', { name: 'File type' }), 'matrix_xlsx');
+  expect(screen.queryByRole('combobox', { name: 'Draft' })).not.toBeInTheDocument();
+  expect(screen.getByText(/Sources sheet/)).toBeInTheDocument();
+  await ui.click(screen.getByRole('button', { name: 'Create snapshot' }));
+  const call = mock.mock.calls.find(([url, init]) => url.endsWith('/exports') && init?.method === 'POST');
+  expect(JSON.parse(String(call?.[1]?.body))).toMatchObject({ kind: 'matrix_xlsx', draft_id: null, expected_revision: null });
+  expect(await screen.findByText('Matrix Excel')).toBeInTheDocument();
+});

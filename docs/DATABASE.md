@@ -89,3 +89,11 @@ Migration 0006 adds evidence_chunks with source checksum, reader/chunker version
 ## Links and quality assessment
 
 Reader v15 adds links and quality objects to existing document_pages.layout JSONB. No schema migration is needed. Evidence chunks retain safe source-link metadata and assessment version; old derived versions remain retained. Select only current identities for future indexing.
+
+## Migration 0018 — password reset tokens
+
+`password_reset_tokens` (id, user_id → users ON DELETE CASCADE, unique token_hash, created_at, expires_at, nullable consumed_at; index on user_id). Only the SHA-256 of the emailed token is stored. `consumed_at` is set when the link is used and also when a newer link, a password change or a completed reset supersedes it, so at most one link per user is live. Reset consumption is a conditional `UPDATE … WHERE consumed_at IS NULL AND expires_at > now() RETURNING user_id`, which makes a token single-use under concurrent submissions. The readiness probe expects revision 0018.
+
+## Matrix exports and reference imports
+
+Migration 0016 widens `export_records.kind` to include `matrix_csv` and `matrix_xlsx`. Migration 0017 adds `reference_imports` (id, project_id, request_id, request_hash, reference_ids JSONB, created_at) with a unique (project_id, request_id) constraint. It records which reference rows a batch import created, so a retried request returns them instead of inserting duplicates. Imported rows are ordinary `reference_records`.

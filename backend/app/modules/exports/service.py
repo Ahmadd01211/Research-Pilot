@@ -10,12 +10,15 @@ from uuid import UUID
 from docx import Document
 from fastapi import HTTPException
 from openpyxl import Workbook  # type: ignore[import-untyped]
-from openpyxl.styles import Font, PatternFill  # type: ignore[import-untyped]
+from openpyxl.styles import Alignment, Font, PatternFill  # type: ignore[import-untyped]
+from openpyxl.utils import get_column_letter  # type: ignore[import-untyped]
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.modules.documents.models import Document as PaperDocument
 from app.modules.exports.models import ExportRecord
 from app.modules.exports.schemas import ExportInput, ExportPage, ExportRead
+from app.modules.matrix.models import MatrixCell, MatrixRow
 from app.modules.projects.service import owned as owned_project
 from app.modules.references.models import ReferenceRecord
 from app.modules.writing.models import WritingDraft
@@ -84,6 +87,86 @@ def _reference_xlsx(db: Session, project_id: UUID) -> bytes:
     return stream.getvalue()
 
 
+MATRIX_FIELDS = (("question", "Research question"), ("method", "Method"),
+                 ("sample", "Sample / context"), ("finding", "Finding"),
+                 ("limitation", "Limitation"))
+MATRIX_HEADERS = ["Paper", "Document ID"] + [
+    heading for _, label in MATRIX_FIELDS for heading in (label, f"{label} (PDF page)")
+]
+SOURCE_HEADERS = ["Paper", "Field", "Researcher note", "PDF page", "Source chunk ID",
+                  "Source SHA-256", "Reader version", "Matrix row ID"]
+
+
+def _matrix(db: Session, project_id: UUID) -> list[tuple[MatrixRow, str, dict[str, MatrixCell]]]:
+    """Active rows in on-screen order with only each field's current cited note."""
+    rows = db.execute(select(MatrixRow, PaperDocument.filename).join(
+        PaperDocument, PaperDocument.id == MatrixRow.document_id,
+    ).where(
+        MatrixRow.project_id == project_id, MatrixRow.deleted_at.is_(None),
+    ).order_by(MatrixRow.created_at, MatrixRow.id)).all()
+    return [(row, filename, {cell.field: cell for cell in row.cells if cell.superseded_at is None})
+            for row, filename in rows]
+
+
+def _matrix_values(filename: str, row: MatrixRow, cells: dict[str, MatrixCell]) -> list[object]:
+    values: list[object] = [filename, row.document_id]
+    for field, _ in MATRIX_FIELDS:
+        cell = cells.get(field)
+        values += [cell.value, cell.page_number] if cell else [None, None]
+    return values
+
+
+def _matrix_csv(db: Session, project_id: UUID) -> bytes:
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream)
+    writer.writerow(MATRIX_HEADERS)
+    for row, filename, cells in _matrix(db, project_id):
+        writer.writerow([_safe_cell(item) for item in _matrix_values(filename, row, cells)])
+    return ("﻿" + stream.getvalue()).encode("utf-8")
+
+
+def _sheet(workbook: Workbook, title: str, headers: list[str], rows: list[list[object]],
+           widths: list[int], numeric: set[int], freeze: str) -> None:
+    sheet = workbook.create_sheet(title)
+    sheet.append(headers)
+    for cell in sheet[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="17365D")
+    for row_number, values in enumerate(rows, start=2):
+        for column, value in enumerate(values, 1):
+            cell = sheet.cell(row_number, column)
+            if column in numeric and value is not None:
+                cell.value = value
+            else:
+                cell.value = str(value) if value is not None else ""
+                cell.data_type = "s"  # Researcher notes stay literal text, never formulas.
+            cell.alignment = Alignment(wrap_text=True, vertical="top")
+    sheet.freeze_panes = freeze
+    sheet.auto_filter.ref = sheet.dimensions
+    for column, width in enumerate(widths, 1):
+        sheet.column_dimensions[get_column_letter(column)].width = width
+
+
+def _matrix_xlsx(db: Session, project_id: UUID) -> bytes:
+    matrix = _matrix(db, project_id)
+    workbook = Workbook()
+    default = workbook.active
+    assert default is not None
+    workbook.remove(default)
+    pages = {4 + 2 * index for index in range(len(MATRIX_FIELDS))}
+    _sheet(workbook, "Matrix", MATRIX_HEADERS,
+           [_matrix_values(filename, row, cells) for row, filename, cells in matrix],
+           [36, 38] + [48, 10] * len(MATRIX_FIELDS), pages, "B2")
+    labels = dict(MATRIX_FIELDS)
+    sources = [[filename, labels[field], cells[field].value, cells[field].page_number,
+                cells[field].chunk_id, cells[field].source_sha256, cells[field].reader_version, row.id]
+               for row, filename, cells in matrix for field, _ in MATRIX_FIELDS if field in cells]
+    _sheet(workbook, "Sources", SOURCE_HEADERS, sources, [36, 20, 60, 10, 30, 66, 40, 38], {4}, "A2")
+    stream = io.BytesIO()
+    workbook.save(stream)
+    return stream.getvalue()
+
+
 def _draft(db: Session, project_id: UUID, data: ExportInput) -> WritingDraft:
     if data.draft_id is None or data.expected_revision is None:
         raise HTTPException(422, "Choose a draft and its current revision")
@@ -139,6 +222,15 @@ def create(db: Session, owner: UUID, project_id: UUID, data: ExportInput) -> Exp
         content = (_reference_csv(db, project_id) if extension == "csv"
                    else _reference_xlsx(db, project_id))
         filename = f"references-{project_id.hex[:8]}.{extension}"
+        mime = ("text/csv; charset=utf-8" if extension == "csv" else
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    elif data.kind in {"matrix_csv", "matrix_xlsx"}:
+        if data.draft_id is not None or data.expected_revision is not None:
+            raise HTTPException(422, "Matrix exports do not use a draft")
+        extension = "csv" if data.kind == "matrix_csv" else "xlsx"
+        content = (_matrix_csv(db, project_id) if extension == "csv"
+                   else _matrix_xlsx(db, project_id))
+        filename = f"matrix-{project_id.hex[:8]}.{extension}"
         mime = ("text/csv; charset=utf-8" if extension == "csv" else
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     else:

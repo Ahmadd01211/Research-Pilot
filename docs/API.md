@@ -14,6 +14,9 @@ The checked contract is `openapi.json`; the frontend types are generated into `f
 | POST | /api/v1/auth/logout | Revoke current session and clear cookies; 204 |
 | GET | /api/v1/me | Return only the authenticated user's public profile |
 | PATCH | /api/v1/me | Update only the current user's display name |
+| POST | /api/v1/me/password | `current_password`, `new_password` (12–128). 204; keeps this session, revokes all other sessions and outstanding reset links. 400 wrong current password or unchanged password; 10 attempts per user per 15 minutes |
+| POST | /api/v1/auth/password/forgot | `email`. Always 204 whether or not the account exists; emails a single-use link after the response. 503 when SMTP is not configured; 5 per email and 30 per peer per 15 minutes |
+| POST | /api/v1/auth/password/reset | `token`, `new_password`. 204 sets the password, consumes the token and revokes every session; 400 for an unknown, used, superseded or expired link |
 | GET | /api/v1/health/live | Process liveness |
 | GET | /api/v1/health/ready | PostgreSQL, migration identity/session schema and Redis readiness |
 
@@ -78,4 +81,6 @@ Owned GET /api/v1/projects/{project_id}/documents/{document_id}/quality returns 
 
 Owner-scoped `GET /api/v1/projects/{project_id}/references/bibliography` returns a limited, read-only bibliography preview in the project's saved style (`apa7`, `mla9` or `chicago18`): `style`, `style_label`, `preview: true`, `limitations`, and `items` holding `reference_id`, plain `text`, `segments` (`text`, `italic`) and per-entry `warnings`. Removed references are excluded. Ordering is deterministic. The endpoint performs no writes or external requests. Foreign or removed projects return 404.
 
-Owner-scoped `POST /api/v1/projects/{project_id}/exports` accepts `reference_csv`, `reference_xlsx`, `draft_markdown` and `draft_docx`. Draft formats require the selected draft ID and its current revision; reference formats require neither. A request UUID makes retries idempotent. `GET .../exports` lists immutable snapshots, and `GET .../exports/{export_id}/download` returns the original bytes as an attachment. Migration 0015 extends the allowed export kinds; file and project history limits are unchanged.
+Owner-scoped `POST /api/v1/projects/{project_id}/references/import/preview` takes `format` (`bibtex` or `ris`) and `text` (at most 1,000,000 characters) and returns `items` (candidates with `index`, `label`, reference fields, `importable`, `errors`, `warnings`, `duplicate_of`) plus `remaining_capacity`. It writes nothing; malformed files return 422 with a location. `POST .../references/import` takes `request_id` and 1–500 reference payloads, validates each exactly as manual creation does, and creates them atomically (201, `items`). Replaying a request ID with the same payload returns the original records; a different payload returns 409. Archived projects return 409. Nginx allows 4 MB bodies on these two routes only. Migration 0017 adds `reference_imports`.
+
+Owner-scoped `POST /api/v1/projects/{project_id}/exports` accepts `reference_csv`, `reference_xlsx`, `matrix_csv`, `matrix_xlsx`, `draft_markdown` and `draft_docx`. Draft formats require the selected draft ID and its current revision; reference and matrix formats require neither. A request UUID makes retries idempotent. `GET .../exports` lists immutable snapshots, and `GET .../exports/{export_id}/download` returns the original bytes as an attachment. Migrations 0015 and 0016 extend the allowed export kinds; file and project history limits are unchanged.

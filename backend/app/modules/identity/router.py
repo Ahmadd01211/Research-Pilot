@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from redis import Redis
 from sqlalchemy.orm import Session
 
@@ -10,13 +10,24 @@ from app.core.dependencies import (
     csrf_guard,
     current_user,
     database,
+    mail_for,
     redis_for,
     settings_for,
 )
 from app.core.security import random_token
+from app.infrastructure.mail import MailSender
 from app.modules.identity import service
 from app.modules.identity.models import User, UserSession
-from app.modules.identity.schemas import CsrfRead, LoginInput, ProfileInput, RegisterInput, UserRead
+from app.modules.identity.schemas import (
+    CsrfRead,
+    LoginInput,
+    PasswordChangeInput,
+    PasswordForgotInput,
+    PasswordResetInput,
+    ProfileInput,
+    RegisterInput,
+    UserRead,
+)
 
 router = APIRouter(prefix="/api/v1", tags=["identity"])
 
@@ -78,3 +89,40 @@ def update_me(data: ProfileInput, user: User = Depends(current_user), db: Sessio
     user.updated_at = datetime.now(UTC)
     db.commit()
     return user
+
+
+@router.post("/me/password", status_code=204)
+def change_password(
+    data: PasswordChangeInput, user: User = Depends(current_user),
+    session: UserSession = Depends(authenticated_session), db: Session = Depends(database),
+    redis: Redis = Depends(redis_for), settings: Settings = Depends(settings_for),
+) -> None:
+    service.limit(redis, settings, "password-change", str(user.id), 10)
+    service.change_password(db, user, session, data)
+
+
+@router.post("/auth/password/forgot", status_code=204, dependencies=[Depends(csrf_guard)])
+def forgot_password(
+    data: PasswordForgotInput, request: Request, background: BackgroundTasks,
+    db: Session = Depends(database), redis: Redis = Depends(redis_for),
+    settings: Settings = Depends(settings_for), mail: MailSender | None = Depends(mail_for),
+) -> None:
+    if mail is None:
+        raise HTTPException(503, "Password recovery email is not configured on this server")
+    service.limit(redis, settings, "forgot-ip", request.client.host if request.client else "unknown", 30)
+    service.limit(redis, settings, "forgot-email", str(data.email).casefold(), 5)
+    # Same response whether or not the account exists; email is sent after the response.
+    issued = service.request_password_reset(db, str(data.email), settings)
+    if issued:
+        background.add_task(service.send_reset_email, mail, settings, *issued)
+
+
+@router.post("/auth/password/reset", status_code=204, dependencies=[Depends(csrf_guard)])
+def reset_password(
+    data: PasswordResetInput, request: Request, response: Response, db: Session = Depends(database),
+    redis: Redis = Depends(redis_for), settings: Settings = Depends(settings_for),
+) -> None:
+    service.limit(redis, settings, "reset-ip", request.client.host if request.client else "unknown", 30)
+    service.reset_password(db, data)
+    response.delete_cookie(settings.session_cookie, path="/", secure=settings.cookie_secure,
+                           httponly=True, samesite="lax")

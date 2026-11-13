@@ -55,6 +55,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password/forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Forgot Password */
+        post: operations["forgot_password_api_v1_auth_password_forgot_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset Password */
+        post: operations["reset_password_api_v1_auth_password_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/register": {
         parameters: {
             query?: never;
@@ -122,6 +156,23 @@ export interface paths {
         head?: never;
         /** Update Me */
         patch: operations["update_me_api_v1_me_patch"];
+        trace?: never;
+    };
+    "/api/v1/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change Password */
+        post: operations["change_password_api_v1_me_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/projects": {
@@ -731,6 +782,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/references/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import References */
+        post: operations["import_references_api_v1_projects__project_id__references_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/references/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Import */
+        post: operations["preview_import_api_v1_projects__project_id__references_import_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/references/settings": {
         parameters: {
             query?: never;
@@ -1246,7 +1331,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "reference_csv" | "reference_xlsx" | "draft_markdown" | "draft_docx";
+            kind: "reference_csv" | "reference_xlsx" | "matrix_csv" | "matrix_xlsx" | "draft_markdown" | "draft_docx";
             /**
              * Request Id
              * Format: uuid
@@ -1282,7 +1367,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "reference_csv" | "reference_xlsx" | "draft_markdown" | "draft_docx";
+            kind: "reference_csv" | "reference_xlsx" | "matrix_csv" | "matrix_xlsx" | "draft_markdown" | "draft_docx";
             /** Sha256 */
             sha256: string;
         };
@@ -1404,6 +1489,58 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * ImportCandidate
+         * @description A parsed entry for researcher review; fields are unvalidated until imported.
+         */
+        ImportCandidate: {
+            /** Authors */
+            authors: string[];
+            /** Container Title */
+            container_title: string;
+            /** Doi */
+            doi: string | null;
+            /** Duplicate Of */
+            duplicate_of: string | null;
+            /** Errors */
+            errors: string[];
+            /** Importable */
+            importable: boolean;
+            /** Index */
+            index: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "journal" | "book" | "conference" | "preprint" | "other";
+            /** Label */
+            label: string;
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
+            /** Warnings */
+            warnings: string[];
+            /** Year */
+            year: number | null;
+        };
+        /** ImportPreview */
+        ImportPreview: {
+            /** Items */
+            items: components["schemas"]["ImportCandidate"][];
+            /** Remaining Capacity */
+            remaining_capacity: number;
+        };
+        /** ImportPreviewInput */
+        ImportPreviewInput: {
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "bibtex" | "ris";
+            /** Text */
+            text: string;
+        };
         /** IndexRead */
         IndexRead: {
             /** Error Code */
@@ -1490,6 +1627,40 @@ export interface components {
             withheld_passages: number;
             /** Withhold Prose */
             withhold_prose: boolean;
+        };
+        /** PasswordChangeInput */
+        PasswordChangeInput: {
+            /**
+             * Current Password
+             * Format: password
+             */
+            current_password: string;
+            /**
+             * New Password
+             * Format: password
+             */
+            new_password: string;
+        };
+        /** PasswordForgotInput */
+        PasswordForgotInput: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+        };
+        /** PasswordResetInput */
+        PasswordResetInput: {
+            /**
+             * New Password
+             * Format: password
+             */
+            new_password: string;
+            /**
+             * Token
+             * Format: password
+             */
+            token: string;
         };
         /** ProcessingRead */
         ProcessingRead: {
@@ -1661,6 +1832,16 @@ export interface components {
             width: number;
             /** Words */
             words: components["schemas"]["WordAnchor"][];
+        };
+        /** ReferenceImportInput */
+        ReferenceImportInput: {
+            /** Items */
+            items: components["schemas"]["ReferenceInput"][];
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
         };
         /** ReferenceInput */
         ReferenceInput: {
@@ -2157,6 +2338,68 @@ export interface operations {
             };
         };
     };
+    forgot_password_api_v1_auth_password_forgot_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordForgotInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_password_api_v1_auth_password_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     register_api_v1_auth_register_post: {
         parameters: {
             query?: never;
@@ -2275,6 +2518,37 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UserRead"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_password_api_v1_me_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChangeInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -3839,6 +4113,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DuplicateMatches"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_references_api_v1_projects__project_id__references_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferenceImportInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferencePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_import_api_v1_projects__project_id__references_import_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportPreviewInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPreview"];
                 };
             };
             /** @description Validation Error */
