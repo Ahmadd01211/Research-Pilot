@@ -8,7 +8,7 @@ from uuid import UUID
 
 from app.modules.documents.quality import assess_page, glyph_dense, searchable_text
 
-CHUNKER_VERSION = "source-types-v13"
+CHUNKER_VERSION = "source-types-v14"
 
 
 def nearby_table_caption(layout: dict[str, Any], table: dict[str, Any]) -> dict[str, Any] | None:

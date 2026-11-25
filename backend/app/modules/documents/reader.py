@@ -26,7 +26,7 @@ class InvalidPageBox(ValueError):
     """The PDF declares a page with no area: a defect in the file, not our heuristics."""
 
 
-READER_VERSION = "word-passages-v33:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+READER_VERSION = "word-passages-v34:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def _reading_order(words: list[dict[str, Any]], rotation: int = 0) -> list[dict[str, Any]]:

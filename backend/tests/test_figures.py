@@ -205,3 +205,62 @@ def test_table_chunks_keep_cells_together_and_distinct_from_prose():
     assert chunk["kind"] == "table_row"
     assert chunk["text"] == "Technology | Definition from source"
     assert chunk["source_metadata"]["cell_ids"] == ["a", "b"]
+
+
+class TwoColumnView:
+    """A US-letter page in normalised coordinates with a narrow (3.7%) column gutter."""
+
+    bbox = (0, 0, 612, 792)
+    images: list[dict[str, float]] = []
+
+
+def two_column_words(right_lines: dict[int, str]) -> list[dict[str, object]]:
+    words: list[dict[str, object]] = []
+    for row in range(40):
+        top = 0.1 + row * 0.015  # ~12 pt leading, as in body text
+        for left, right, default in ((0.08, 0.468, "left column body text here now"),
+                                     (0.505, 0.891, "right column body text here now")):
+            if left < 0.5 and row in right_lines:
+                continue  # paragraph break in the left column, as on the real page
+            text = right_lines.get(row, default) if left > 0.5 else default
+            tokens = text.split()
+            step = (right - left) / len(tokens)
+            for n, token in enumerate(tokens):
+                words.append({"text": token, "box": [left + n * step, top,
+                                                    left + (n + 1) * step - 0.004, top + 0.011]})
+    return words
+
+
+def test_caption_lines_never_cross_a_narrow_column_gutter():
+    # ResNet p5: a right-column sentence starting "Fig. 4." absorbed the left column's
+    # lines at the same height, interleaving both columns into one "caption" chunk.
+    from app.modules.documents.figures import figures_on_page
+
+    words = two_column_words({9: "an earlier sentence ends here.",
+                              10: "Fig. 4. First the situation is reversed"})
+    figures = figures_on_page(TwoColumnView(), words, [])
+    caption_words = [words[i] for f in figures for i in f["caption_word_indices"]]
+    assert caption_words, "the caption-like line should still be found"
+    assert all(word["box"][0] > 0.49 for word in caption_words)
+
+
+def test_a_sentence_continuing_onto_fig_n_is_not_a_caption():
+    # ResNet p5: "...three major observations from Table 2 and" / "Fig. 4. First, ...".
+    # Treating it as a caption swallowed the rest of the column's body text.
+    from app.modules.documents.figures import figures_on_page
+
+    words = two_column_words({9: "three major observations from Table 2 and",
+                              10: "Fig. 4. First the situation is reversed"})
+    assert figures_on_page(TwoColumnView(), words, []) == []
+
+
+def test_figure_labels_above_a_real_caption_do_not_suppress_it():
+    # ResNet: "F relu" (diagram labels) and axis ticks sit just above real captions.
+    from app.modules.documents.figures import figures_on_page
+
+    words = two_column_words({10: "Figure 2. Residual learning a building block."})
+    words = [w for w in words if not (w["box"][0] > 0.5 and 0.1 + 9 * 0.015 <= w["box"][1] < 0.1 + 10 * 0.015)]
+    words += [{"text": "F", "box": [0.62, 0.1 + 9 * 0.015, 0.63, 0.1 + 9 * 0.015 + 0.011]},
+              {"text": "relu", "box": [0.70, 0.1 + 9 * 0.015, 0.73, 0.1 + 9 * 0.015 + 0.011]}]
+    figures = figures_on_page(TwoColumnView(), words, [])
+    assert [f["label"] for f in figures] == ["Figure 2"]

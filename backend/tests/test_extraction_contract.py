@@ -92,7 +92,7 @@ def test_derived_version_bumps_travel_together():
     from app.modules.documents.reader import READER_VERSION
 
     pinned = {
-        ("source-types-v13", "evidence-quality-v5"): "word-passages-v33",
+        ("source-types-v14", "evidence-quality-v5"): "word-passages-v34",
     }
     assert pinned.get((CHUNKER_VERSION, QUALITY_VERSION)) == READER_VERSION.split(":")[0]
 

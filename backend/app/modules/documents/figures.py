@@ -10,6 +10,73 @@ CAPTION = re.compile(
 )
 
 
+def column_gutter(words: list[dict[str, Any]]) -> float | None:
+    """x position of a two-column gutter that body words do not cross, if the page has one.
+
+    Conference layouts often use a gutter narrower (~3-4% of the page width) than any
+    safe "large gap" threshold, so lines at the same height must be split at it.
+    """
+    body = [word for word in words if 0.08 < word["box"][1] and word["box"][3] < 0.92]
+    if len(body) < 40:
+        return None
+    allowed = max(3, len(body) // 50)  # titles, wide figures or tables may cross
+    # Widest run of uncrossed sample positions; a single aligned word boundary is not a
+    # gutter, so the run must be at least 1.5% of the page wide.
+    best: tuple[float, float] | None = None
+    start: float | None = None
+    for step in range(70, 132):
+        x = step / 200  # 0.35 .. 0.655
+        clear = step < 131 and sum(word["box"][0] < x < word["box"][2] for word in body) <= allowed
+        if clear and start is None:
+            start = x
+        elif not clear and start is not None:
+            width = x - 0.005 - start
+            if best is None or width > best[0]:
+                best = (width, (start + x - 0.005) / 2)
+            start = None
+    if best is None or best[0] < 0.015:
+        return None
+    x = best[1]
+    left = sum(word["box"][2] <= x for word in body)
+    right = sum(word["box"][0] >= x for word in body)
+    if min(left, right) < len(body) // 5:
+        return None
+    return x
+
+
+def _continues_sentence(
+    lines: list[list[int]], n: int, words: list[dict[str, Any]], height: float
+) -> bool:
+    """True when line n continues an unfinished sentence directly above it in its column.
+
+    "...observations from Table 2 and" / "Fig. 4. First, ..." is a reference, not a
+    caption; captions start after a figure or a finished line, never mid-sentence.
+    """
+    top = min(words[i]["box"][1] for i in lines[n])
+    left = min(words[i]["box"][0] for i in lines[n])
+    right = max(words[i]["box"][2] for i in lines[n])
+    above = [
+        line for line in lines[:n]
+        if max(words[i]["box"][3] for i in line) <= top
+        and min(right, max(words[i]["box"][2] for i in line))
+        - max(left, min(words[i]["box"][0] for i in line)) > 0.02
+    ]
+    if not above:
+        return False
+    previous = max(above, key=lambda line: max(words[i]["box"][3] for i in line))
+    gap = (top - max(words[i]["box"][3] for i in previous)) * height
+    ending = words[max(previous, key=lambda i: words[i]["box"][2])]["text"]
+    # Only a body line counts: a full, justified line in the same column (left edge
+    # within a paragraph indent, same right edge). Figure labels ("F relu") and axis
+    # ticks directly above a real caption are not sentences.
+    body_line = (
+        len(previous) >= 5
+        and abs(min(words[i]["box"][0] for i in previous) - left) <= 0.03
+        and abs(max(words[i]["box"][2] for i in previous) - right) <= 0.01
+    )
+    return body_line and gap <= 6 and not ending.endswith((".", ":", ";", "!", "?", ")", "]"))
+
+
 def figures_on_page(
     view: Any, words: list[dict[str, Any]], tables: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
@@ -27,12 +94,17 @@ def figures_on_page(
             lines[-1].append(i)
         else:
             lines.append([i])
+    gutter = column_gutter(words)
     split_lines: list[list[int]] = []
     for line in lines:
         line.sort(key=lambda i: words[i]["box"][0])
         local: list[int] = []
         for index in line:
-            if local and words[index]["box"][0] - words[local[-1]]["box"][2] > 0.08:
+            previous_right = words[local[-1]]["box"][2] if local else 0.0
+            crosses_gutter = (
+                gutter is not None and previous_right <= gutter <= words[index]["box"][0]
+            )
+            if local and (words[index]["box"][0] - previous_right > 0.08 or crosses_gutter):
                 split_lines.append(local)
                 local = []
             local.append(index)
@@ -49,7 +121,7 @@ def figures_on_page(
     for n, line in enumerate(lines):
         text = " ".join(words[i]["text"] for i in line)
         match = CAPTION.match(text)
-        if not match:
+        if not match or _continues_sentence(lines, n, words, height):
             continue
         selected = list(line)
         last = max(words[i]["box"][3] for i in line)
