@@ -12,7 +12,12 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.config import Settings
 from app.modules.documents import indexing
 from app.modules.documents.chunks import make_chunks
-from app.modules.documents.extraction import EXTRACTOR_VERSION, TRANSIENT, extract_with_layout
+from app.modules.documents.extraction import (
+    EXTRACTOR_VERSION,
+    TRANSIENT,
+    USER_RETRYABLE,
+    extract_with_layout,
+)
 from app.modules.documents.models import Document, DocumentJob, DocumentPageText, EvidenceChunk
 from app.modules.documents.storage import LocalStorage
 from app.modules.identity import models as identity_models  # noqa: F401
@@ -198,7 +203,7 @@ def retry(db: Session, owner: UUID, project_id: UUID, document_id: UUID) -> Docu
     if (
         job is None
         or job.state != "failed"
-        or job.error_code not in TRANSIENT
+        or job.error_code not in USER_RETRYABLE
         or job.attempts >= MAX_ATTEMPTS
     ):
         raise HTTPException(409, "This outcome cannot be retried; check its explanation")

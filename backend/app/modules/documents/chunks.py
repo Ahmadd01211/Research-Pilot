@@ -6,9 +6,9 @@ import re
 from typing import Any
 from uuid import UUID
 
-from app.modules.documents.quality import assess_page
+from app.modules.documents.quality import assess_page, glyph_dense, searchable_text
 
-CHUNKER_VERSION = "source-types-v12"
+CHUNKER_VERSION = "source-types-v13"
 
 
 def nearby_table_caption(layout: dict[str, Any], table: dict[str, Any]) -> dict[str, Any] | None:
@@ -50,8 +50,12 @@ def make_chunks(
         quality = assess_page(layout) if "words" in layout else None
         if quality and quality["block_page"]:
             continue
-        uncertain = any(f["box"] is None for f in layout.get("figures", [])) or bool(
-            quality and quality["withhold_prose"]
+        # Assessed pages withhold chart-like passages individually (blocked ids);
+        # legacy unassessed layouts keep the conservative whole-page rule.
+        uncertain = (
+            quality["withhold_prose"]
+            if quality
+            else any(f["box"] is None for f in layout.get("figures", []))
         )
         for passage in [] if uncertain else layout["passages"]:
             if quality and passage["id"] in quality["blocked_passage_ids"]:
@@ -61,10 +65,11 @@ def make_chunks(
                 continue
             if role == "endnotes" and passage["text"].strip().upper() == "ENDNOTES":
                 continue
-            # Undecodable mathematical font glyphs must not become answer evidence.
-            if any(0xE000 <= ord(c) <= 0xF8FF for c in passage["text"]):
+            # Formula-dense undecodable glyphs must not become answer evidence; a
+            # stray symbol is marked [?] so the surrounding paragraph stays searchable.
+            if glyph_dense(passage["text"]):
                 continue
-            search_text = passage["text"]
+            search_text = searchable_text(passage["text"])
             source_metadata: dict[str, Any] = {"passage_id": passage["id"], "evidence_role": role}
             if role == "endnotes":
                 marker = re.match(r"^([1-9]\d{0,2})\s", search_text)

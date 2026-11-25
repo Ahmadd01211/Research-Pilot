@@ -11,7 +11,7 @@ function allowedTarget(link:SourceLink):string|undefined {
 }
 export function SourceDiagnostics({quality,summary,links=[],onPage,onLocate,error,onRetry}:{quality?:Quality|null;summary?:Summary;links?:SourceLink[];onPage:(page:number)=>void;onLocate:(id:string)=>void;error?:boolean;onRetry:()=>void}) {
   return <section className="notice mt16" aria-label="Automatic source assessment"><h3>Automatic source checks</h3>
-    <p className="tiny muted mt16">Heuristic checks, not a guarantee of accuracy. Flagged content remains readable; affected evidence is withheld from retrieval. Linked websites are not fetched.</p>
+    <p className="tiny muted mt16">Heuristic checks, not a guarantee of accuracy. Flagged content remains readable; blocking findings withhold the affected evidence from retrieval, while warnings only mark it for review. Linked websites are not fetched.</p>
     {summary?.pages && <><p className="mt16">Document: {summary.checked_pages} pages checked without flags · {summary.review_pages} need review · {summary.blocked_pages} withheld · {summary.not_assessed_pages} not assessed. {summary.link_count} source links retained.</p>
       {summary.pages.some(p=>p.state!=='checked')&&<details className="mt16"><summary>Review flagged or unassessed pages</summary>{summary.pages.filter(p=>p.state!=='checked').map(p=><div className="mt16" key={p.page_number}><button className="btn" onClick={()=>onPage(p.page_number)}>Page {p.page_number} · {labels[p.state]}</button>{(p.findings??[]).map(f=><p className="tiny" key={f.code}>{f.message}</p>)}</div>)}</details>}</>}
     {error&&<p role="alert" className="mt16">Document assessment is unavailable. <button className="btn" onClick={onRetry}>Retry assessment</button></p>}

@@ -21,7 +21,12 @@ from app.modules.documents.quality import assess_page
 from app.modules.documents.regression_tables import regression_tables
 from app.modules.documents.tables import striped_tables
 
-READER_VERSION = "word-passages-v32:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
+
+class InvalidPageBox(ValueError):
+    """The PDF declares a page with no area: a defect in the file, not our heuristics."""
+
+
+READER_VERSION = "word-passages-v33:pdfplumber-" + plumber_version + ":pdfminer-" + miner_version
 
 
 def _reading_order(words: list[dict[str, Any]], rotation: int = 0) -> list[dict[str, Any]]:
@@ -187,7 +192,7 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
         x, y, right, bottom = view.bbox
         width, height = right - x, bottom - y
         if width <= 0 or height <= 0:
-            raise ValueError("Invalid page box")
+            raise InvalidPageBox("Invalid page box")
         words = []
         # With text-flow extraction pdfplumber uses char_dir even for rotated glyphs.
         # Keep visual boxes in rotated CropBox space, but tokenize in text direction.
@@ -212,15 +217,16 @@ def prepare_layouts(pdf: Any) -> list[dict[str, Any]]:
                 continue
             if len(text) > 2000:
                 raise MemoryError
+            # Round before the degenerate check: edges within 1e-6 collapse when stored.
             box = [
-                max(0.0, min(1.0, (item["x0"] - x) / width)),
-                max(0.0, min(1.0, (item["top"] - y) / height)),
-                max(0.0, min(1.0, (item["x1"] - x) / width)),
-                max(0.0, min(1.0, (item["bottom"] - y) / height)),
+                round(max(0.0, min(1.0, (item["x0"] - x) / width)), 6),
+                round(max(0.0, min(1.0, (item["top"] - y) / height)), 6),
+                round(max(0.0, min(1.0, (item["x1"] - x) / width)), 6),
+                round(max(0.0, min(1.0, (item["bottom"] - y) / height)), 6),
             ]
             if box[0] >= box[2] or box[1] >= box[3]:
                 continue
-            words.append({"text": text, "box": [round(v, 6) for v in box], "margin": False})
+            words.append({"text": text, "box": box, "margin": False})
         words = _reading_order(words, page.rotation or 0)
         total_words += len(words)
         if len(words) > 12000 or total_words > 200000:

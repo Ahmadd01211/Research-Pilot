@@ -94,7 +94,7 @@ class QualityFinding(BaseModel):
     code: str
     message: str
     severity: Literal["block", "warning"]
-    scope: Literal["page", "prose", "passage", "table", "links"]
+    scope: Literal["page", "prose", "passage", "table", "figure", "links"]
 
 
 class PageQuality(BaseModel):

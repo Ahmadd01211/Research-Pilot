@@ -38,6 +38,12 @@ it('explains insufficient text and does not offer a pointless retry', async () =
   expect(await screen.findByText(/OCR is not available yet/)).toBeVisible();
   expect(screen.queryByRole('button', { name: /Retry extraction/ })).not.toBeInTheDocument();
 });
+it('does not blame the PDF when ResearchPilot layout processing fails', async () => {
+  open('failed', 'layout_failure');
+  expect(await screen.findByText(/ResearchPilot problem, not a problem with your PDF/)).toBeVisible();
+  expect(screen.queryByText(/Try a fresh PDF export/)).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Retry extraction/ })).toBeVisible();
+});
 it('submits an authorized retry and shows queued state after success', async () => {
   const mock = open('failed', 'storage_unavailable'); const ui = userEvent.setup();
   await ui.click(await screen.findByRole('button', { name: /Retry extraction/ }));

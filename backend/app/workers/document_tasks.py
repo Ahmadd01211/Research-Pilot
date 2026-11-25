@@ -25,4 +25,14 @@ def extract_document(document_id: str) -> None:
         engine.dispose()
 
 
-celery_app.task(name="researchpilot.documents.extract", ignore_result=True)(extract_document)
+# Parsing may use PARSER_WALL_SECONDS (100s); publication (page rows, chunk inserts,
+# index queueing) then needs a real margin before the soft limit, and the hard limit
+# must stay below the job lease (240s) so a live worker is never treated as abandoned.
+EXTRACT_SOFT_SECONDS = 160
+EXTRACT_HARD_SECONDS = 190
+celery_app.task(
+    name="researchpilot.documents.extract",
+    ignore_result=True,
+    soft_time_limit=EXTRACT_SOFT_SECONDS,
+    time_limit=EXTRACT_HARD_SECONDS,
+)(extract_document)

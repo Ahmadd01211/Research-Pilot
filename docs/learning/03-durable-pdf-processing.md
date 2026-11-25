@@ -20,14 +20,15 @@ The lease lasts 240 seconds, longer than the 150-second Celery hard limit. This 
 
 ## Why use a parser subprocess?
 
-PDFs contain compressed streams and complicated structures. Small upload size does not bound decompressed memory use. `extraction.py` first verifies SHA-256, then starts `python -m app.modules.documents.parse_pdf` with a minimal environment. The child applies Linux resource limits before importing pypdf. The worker waits at most 60 seconds, after which subprocess.run kills/waits for the child.
+PDFs contain compressed streams and complicated structures. Small upload size does not bound decompressed memory use. `extraction.py` first verifies SHA-256, then starts `python -m app.modules.documents.parse_pdf` with a minimal environment. The child applies Linux resource limits before importing pypdf. The worker waits at most 100 seconds (`PARSER_WALL_SECONDS`), after which subprocess.run kills/waits for the child.
 
-Limits are explicit: 512 MiB address space, 40/45 seconds CPU, 300 pages, 100k characters per page, 2m per document. The child returns bounded JSON, not database writes. The parent checks the shape again. The worker's shared originals volume is read-only. The advantage is predictable failure and protection from ordinary resource exhaustion. The cost is process startup and rejecting some complex PDFs. This is not a complete security sandbox: production still needs stronger isolation and maintenance.
+Limits are explicit: 512 MiB address space, 90/95 seconds CPU (`parse_pdf.CPU_SECONDS`; raised from 40 on 24 November 2026 because figure-heavy real papers used 22 s, mostly in pdfminer's vector-path decoding), 300 pages, 100k characters per page, 2m per document. The child returns bounded JSON, not database writes. The parent checks the shape again. The worker's shared originals volume is read-only. The advantage is predictable failure and protection from ordinary resource exhaustion. The cost is process startup and rejecting some complex PDFs. This is not a complete security sandbox: production still needs stronger isolation and maintenance.
 
 ## Failure categories are product behavior
 
 - encrypted_pdf: upload an unlocked copy you are permitted to use; no passwords are collected.
 - invalid_pdf: structure could not be parsed strictly; a fresh export may help.
+- layout_failure: pypdf read the PDF, but ResearchPilot's own layout heuristics crashed or produced output that breaks the reader contract. The worker logs the document UUID and a content-free diagnostic (exception type and file:line, or the failing schema field path). Exceptions raised inside pdfminer/pdfplumber, and zero-area page boxes, are the file's defect and stay `invalid_pdf`. Not retried automatically because it is deterministic; the owner can request another bounded attempt after an update.
 - insufficient_text: fewer than 40 readable characters; this may be scanned, blank, or image-only. We do not pretend to have OCR.
 - page_limit, resource_limit, parser_timeout: the document exceeded supported processing limits.
 - integrity_mismatch: original bytes no longer match their saved checksum; operator restoration is needed. Re-upload duplicate handling is not a storage-repair mechanism.

@@ -5,7 +5,51 @@ from typing import Any
 
 from app.modules.documents.hybrid import route_page
 
-QUALITY_VERSION = "evidence-quality-v4"
+QUALITY_VERSION = "evidence-quality-v5"
+UNDECODED = re.compile(r"\(cid:\s*\d+\)|[-�]", re.IGNORECASE)
+GLYPH_DENSITY_LIMIT = 0.05  # More than 1 undecodable symbol per 20 tokens: likely a formula.
+
+
+def undecodable_count(text: str) -> int:
+    return len(UNDECODED.findall(text))
+
+
+def glyph_dense(text: str) -> bool:
+    """Withhold formula-like passages; a stray symbol must not hide a paragraph."""
+    count = undecodable_count(text)
+    return bool(count) and count / max(1, len(text.split())) > GLYPH_DENSITY_LIMIT
+
+
+COMMON_WORDS = frozenset(
+    "the of and a to in is we that for with as on are this by be it an from which our at or "
+    "can not these their its was were has have than but also each when where".split()
+)
+
+
+NUMERIC_TOKEN = re.compile(r"[+−–-]?\d[\d.,%*]*")
+
+
+def clear_prose(text: str) -> bool:
+    """Sentence-like text: long, ordinary function words, not labels or a flattened table.
+
+    English function words only; non-English prose on such pages stays withheld.
+    """
+    tokens = text.split()
+    if len(tokens) < 25:
+        return False
+    common = sum(token.lower().strip(",.;:()") in COMMON_WORDS for token in tokens)
+    single = sum(len(token) == 1 and token.isalpha() for token in tokens)
+    numeric = sum(bool(NUMERIC_TOKEN.fullmatch(token)) for token in tokens)
+    return (
+        common / len(tokens) >= 0.15
+        and single / len(tokens) < 0.3
+        and numeric / len(tokens) < 0.15
+    )
+
+
+def searchable_text(text: str) -> str:
+    """Mark undecodable symbols visibly instead of embedding glyph codes."""
+    return UNDECODED.sub("[?]", text)
 
 
 def assess_page(layout: dict[str, Any]) -> dict[str, Any]:
@@ -16,6 +60,7 @@ def assess_page(layout: dict[str, Any]) -> dict[str, Any]:
     blocked_ids: set[str] = set()
     blocked_tables: set[int] = set()
     all_prose = False
+    figure_uncertain = False
     block_page = False
 
     def issue(code: str, message: str, severity: str, scope: str) -> None:
@@ -90,7 +135,7 @@ def assess_page(layout: dict[str, Any]) -> dict[str, Any]:
         box = figure.get("box")
         caption_indices = figure.get("caption_word_indices", [])
         if any(not isinstance(i, int) or not 0 <= i < len(words) for i in caption_indices):
-            all_prose = True
+            figure_uncertain = True
             issue(
                 "invalid_figure_anchor",
                 "A figure caption has an invalid measured source anchor.",
@@ -99,10 +144,10 @@ def assess_page(layout: dict[str, Any]) -> dict[str, Any]:
             )
             continue
         if not _valid_box(box):
-            all_prose = True
+            figure_uncertain = True
             issue(
                 "uncertain_figure_boundary",
-                "A figure boundary is uncertain; page prose is withheld to avoid chart-label contamination.",
+                "A figure boundary is uncertain; chart-like text is withheld, full paragraphs stay searchable.",
                 "block",
                 "prose",
             )
@@ -111,7 +156,7 @@ def assess_page(layout: dict[str, Any]) -> dict[str, Any]:
         if figure_width * figure_height > 0.45 or (
             figure_width > 0.92 and figure_height > 0.42
         ):
-            all_prose = True
+            figure_uncertain = True
             issue(
                 "oversized_figure_region",
                 "A detected figure covers an unusually large part of the page; structured fallback review is required.",
@@ -123,7 +168,7 @@ def assess_page(layout: dict[str, Any]) -> dict[str, Any]:
             vertical_gap = max(box[1] - caption_box[3], caption_box[1] - box[3], 0)
             horizontal_overlap = min(box[2], caption_box[2]) - max(box[0], caption_box[0])
             if vertical_gap > 0.22 or horizontal_overlap <= 0:
-                all_prose = True
+                figure_uncertain = True
                 issue(
                     "misaligned_figure_caption",
                     "A figure and its printed caption are too far apart or do not overlap horizontally.",
@@ -131,7 +176,7 @@ def assess_page(layout: dict[str, Any]) -> dict[str, Any]:
                     "figure",
                 )
             if _caption_crosses_columns(words, caption_indices):
-                all_prose = True
+                figure_uncertain = True
                 issue(
                     "caption_crosses_columns",
                     "A figure caption appears to include text from another column.",
@@ -141,20 +186,31 @@ def assess_page(layout: dict[str, Any]) -> dict[str, Any]:
     candidates = [p for p in passages if p.get("role", "body") in {"body", "abstract", "data_availability", "endnotes"}]
     for passage in candidates:
         text = passage["text"]
-        if re.search(r"\(cid:\s*\d+\)", text, re.IGNORECASE):
+        if figure_uncertain and not clear_prose(text):
+            # Without a measured figure region, axis ticks, legends and letter-spaced
+            # labels cannot be separated by position; keep only unmistakable prose.
             blocked_ids.add(passage["id"])
-            issue(
-                "undecoded_font_glyphs",
-                "The PDF contains undecoded font glyph codes; affected passages are withheld from retrieval.",
-                "block",
-                "passage",
-            )
-        if any(0xE000 <= ord(c) <= 0xF8FF or c == "\ufffd" for c in text):
+        if glyph_dense(text):
             blocked_ids.add(passage["id"])
+            if re.search(r"\(cid:\s*\d+\)", text, re.IGNORECASE):
+                issue(
+                    "undecoded_font_glyphs",
+                    "The PDF contains undecoded font glyph codes; affected passages are withheld from retrieval.",
+                    "block",
+                    "passage",
+                )
+            else:
+                issue(
+                    "undecodable_symbols",
+                    "Undecodable symbols are present; affected passages are withheld.",
+                    "block",
+                    "passage",
+                )
+        elif undecodable_count(text):
             issue(
-                "undecodable_symbols",
-                "Undecodable symbols are present; affected passages are withheld.",
-                "block",
+                "sparse_undecoded_symbols",
+                "A few symbols could not be decoded; they appear as [?] in search evidence. Check the original for exact notation.",
+                "warning",
                 "passage",
             )
         tokens = text.split()
@@ -301,7 +357,7 @@ def _caption_crosses_columns(words: list[dict[str, Any]], indices: list[int]) ->
         ordered = sorted(line, key=lambda i: words[i]["box"][0])
         if any(
             words[right]["box"][0] - words[left]["box"][2] > 0.12
-            for left, right in zip(ordered, ordered[1:])
+            for left, right in zip(ordered, ordered[1:], strict=False)
         ):
             return True
     return False
