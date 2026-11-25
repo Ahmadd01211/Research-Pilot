@@ -911,12 +911,38 @@ export interface components {
         };
         /** Capabilities */
         Capabilities: {
+            /** Answer Daily Limit */
+            answer_daily_limit: number;
+            /**
+             * Answer Data Policy
+             * @enum {string}
+             */
+            answer_data_policy: "no_collection" | "collection_allowed" | "provider_terms";
             /** Answer Enabled */
             answer_enabled: boolean;
             /** Answer Model */
             answer_model: string;
+            /**
+             * Answer Provider
+             * @enum {string}
+             */
+            answer_provider: "google" | "openrouter";
+            /** Answer User Daily Limit */
+            answer_user_daily_limit: number;
+            /** Answers Remaining Today */
+            answers_remaining_today: number | null;
             /** Embedding Enabled */
             embedding_enabled: boolean;
+            /**
+             * Embedding Provider
+             * @enum {string}
+             */
+            embedding_provider: "google" | "local";
+            /**
+             * Search Mode
+             * @enum {string}
+             */
+            search_mode: "hybrid" | "keyword";
         };
         /** CellInput */
         CellInput: {
@@ -1433,6 +1459,12 @@ export interface components {
             error_code: string | null;
             /** Processed Chunks */
             processed_chunks: number;
+            /**
+             * Search Mode
+             * @default hybrid
+             * @enum {string}
+             */
+            search_mode: "hybrid" | "keyword";
             /** State */
             state: string;
             /** Total Chunks */
@@ -1600,7 +1632,7 @@ export interface components {
              * Scope
              * @enum {string}
              */
-            scope: "page" | "prose" | "passage" | "table" | "links";
+            scope: "page" | "prose" | "passage" | "table" | "figure" | "links";
             /**
              * Severity
              * @enum {string}

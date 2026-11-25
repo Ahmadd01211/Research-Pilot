@@ -45,9 +45,10 @@ class IndexRead(BaseModel):
 def index_status(
     project_id: UUID, document_id: UUID,
     user: User = Depends(current_user), db: Session = Depends(database),
+    settings: Settings = Depends(settings_for),
 ) -> DocumentIndex | None:
     paper = service.owned(db, user.id, project_id, document_id)
-    return indexing.current_index(db, paper)
+    return indexing.current_index(db, paper, settings)
 
 
 @router.post("/{document_id}/index", response_model=IndexRead)

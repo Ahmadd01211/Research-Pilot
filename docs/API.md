@@ -1,6 +1,13 @@
 # Identity API contract
 
-## Evidence search (current)
+## Evidence search and answers (24 November 2026, supersedes the paragraph below where they differ)
+
+- `GET .../evidence/capabilities` returns `embedding_enabled`, `embedding_provider` (`local`: open-weights Qwen3 on this server; `google`: chunk text is sent to Google), `search_mode` (`hybrid` with embeddings, otherwise `keyword`), `answer_enabled`, `answer_provider` (`google` or `openrouter`), `answer_model`, `answer_daily_limit`, `answer_user_daily_limit`, `answers_remaining_today` (null when answers are off or Redis is unavailable) and `answer_data_policy` (`no_collection`, `collection_allowed` or `provider_terms`).
+- `GET .../evidence/indexes` in keyword mode returns one status per extracted paper. `ready` means current-version chunks exist (`total_chunks` is their count). `needs_refresh` means it was extracted by an older reader. `no_evidence` means it is current, but quality checks withheld every passage. Each status has `search_mode`.
+- `POST .../documents/{id}/index` refreshes an older reader's text in both modes (returns `state: preparing_reader`). Creating an embedding index still requires embeddings (503 otherwise).
+- `POST .../evidence/search` without embeddings uses PostgreSQL full-text search over current chunks (`model: postgres-full-text`, `index_format: keyword-v1`).
+- `POST .../evidence/answer` needs only the answer provider's key. It reserves one slot from the shared daily budget, and from the caller's daily share, right before the provider call. Questions with no retrieved evidence spend nothing. When the budget is exhausted it returns 429 with `Retry-After` (seconds until 00:00 UTC). The per-user rate limit (10 per 15 minutes) still applies.
+- `POST .../documents/{id}/retry` also accepts `layout_failure` (owner-initiated, at most 5 total attempts).
 
 The checked OpenAPI schema includes owner-scoped `GET /api/v1/projects/{project_id}/evidence/capabilities` (whether hosted indexing is configured), `GET .../evidence/indexes` (current index states), and `POST .../evidence/search` (question, selected document IDs, bounded result count). `POST /api/v1/projects/{project_id}/documents/{document_id}/index` explicitly queues eligible source chunks for a hosted embedding provider; the matching GET returns job progress. Indexing is disabled by default. Search returns page-linked source chunks, not a generated answer. State-changing calls require session, Origin and CSRF checks. Foreign or removed projects return 404.
 

@@ -1,0 +1,27 @@
+# Development only: live code without rebuilding images. Enable on THIS machine with
+#   COMPOSE_FILE=compose.yaml:compose.dev.yaml   (in .env; use ; instead of : on Windows)
+# Never use on a server: production runs the immutable code baked into the images.
+# Docker Desktop on Windows does not deliver file events into containers, so watchers poll.
+x-live-code: &live-code
+  WATCHFILES_FORCE_POLLING: "true"
+services:
+  api:
+    volumes:
+      - ./backend/app:/srv/app:ro
+    environment: *live-code
+    command: [uvicorn, app.main:create_app, --factory, --host, 0.0.0.0, --port, '8000', --no-access-log, --no-proxy-headers, --reload, --reload-dir, /srv/app]
+  worker:
+    volumes:
+      - ./backend/app:/srv/app:ro
+    environment: *live-code
+    command: [watchfiles, --filter, python, 'celery -A app.workers.celery_app:celery_app worker -Q documents,embeddings,analysis,exports --concurrency=2 --loglevel=WARNING', /srv/app]
+  dispatcher:
+    volumes:
+      - ./backend/app:/srv/app:ro
+    environment: *live-code
+    command: [watchfiles, --filter, python, 'python -m app.workers.dispatcher', /srv/app]
+  # The embedder is not auto-reloaded: reloading the model takes ~20 s and ~3 GB.
+  # After editing app/embedder, run: docker compose restart embedder
+  embedder:
+    volumes:
+      - ./backend/app/embedder:/srv/app/embedder:ro

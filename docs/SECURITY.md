@@ -42,8 +42,20 @@ Reader preparation uses existing ownership/CSRF/project locks and is allowed onl
 
 ## Figure evidence milestone
 
-Figure previews use owned, checksum-verified originals locally. No external image URL or vision API is used. Uncertain figure-page prose is withheld from retrieval preparation. Caption detection is heuristic, not an accuracy guarantee.
+Figure previews use owned, checksum-verified originals locally. No external image URL or vision API is used. On pages with an uncertain figure region, chart-like passages are withheld from retrieval preparation while unmistakable prose paragraphs remain eligible (ADR 0008 amendment). Caption detection is heuristic, not an accuracy guarantee.
 
 ## Links and quality assessment
 
 PDF links are passive: only HTTP(S), simple mailto and resolved local PDF destinations become navigation controls. Scripts, file/remote-file and unsupported actions are disabled, and malformed links do not execute. External navigation is explicit and uses no referrer/no opener. No linked content is ingested automatically. Quality gates are heuristic safeguards, not a correctness guarantee.
+
+## Local embeddings (ADR 0010)
+
+With `RP_EMBEDDING_PROVIDER=local`, the API and worker send source chunks and questions to the `embedder` container over the private compose network only. That container:
+- publishes no host port
+- has no credentials
+- runs as a non-root user with a read-only root filesystem, `no-new-privileges` and a memory limit
+- bounds each request to 8 texts of at most 8,000 characters
+- never logs request text
+- downloads model weights for a pinned Hugging Face revision into the `embedder-models` volume on first start only, then loads them from local files only (`local_files_only`)
+
+It has no authentication of its own, so it must never be given a published port or be attached to a public network.

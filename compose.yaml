@@ -8,9 +8,16 @@ x-backend: &backend
     RP_PUBLIC_ORIGIN: http://localhost:3100
     RP_ENVIRONMENT: development
     RP_EMBEDDING_ENABLED: ${RP_EMBEDDING_ENABLED:-false}
+    RP_EMBEDDING_PROVIDER: ${RP_EMBEDDING_PROVIDER:-google}
+    RP_EMBEDDING_URL: http://embedder:8000
     RP_ANSWER_ENABLED: ${RP_ANSWER_ENABLED:-false}
+    RP_ANSWER_PROVIDER: ${RP_ANSWER_PROVIDER:-google}
     RP_ANSWER_MODEL: ${RP_ANSWER_MODEL:-gemini-3.8-flash}
+    RP_ANSWER_DAILY_LIMIT: ${RP_ANSWER_DAILY_LIMIT:-20}
+    RP_ANSWER_USER_DAILY_LIMIT: ${RP_ANSWER_USER_DAILY_LIMIT:-}
+    RP_OPENROUTER_ALLOW_DATA_COLLECTION: ${RP_OPENROUTER_ALLOW_DATA_COLLECTION:-false}
     RP_GOOGLE_API_KEY: ${RP_GOOGLE_API_KEY:-}
+    RP_OPENROUTER_API_KEY: ${RP_OPENROUTER_API_KEY:-}
   init: true
   security_opt: [no-new-privileges:true]
 services:
@@ -75,6 +82,30 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+  # Local Qwen3 embeddings. Enable with COMPOSE_PROFILES=local-embeddings and
+  # RP_EMBEDDING_PROVIDER=local. No published port: only api and worker reach it.
+  embedder:
+    profiles: [local-embeddings]
+    image: researchpilot-greenfield-embedder:dev
+    build: {context: ./backend, dockerfile: Dockerfile.embedder}
+    environment:
+      EMBEDDER_THREADS: ${RP_EMBEDDER_THREADS:-4}
+    # Weights persist here across rebuilds; only a new pinned revision downloads again.
+    volumes: [embedder-models:/models]
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    mem_limit: ${RP_EMBEDDER_MEMORY:-4g}
+    # Self-heal if a future input pattern ever exhausts memory; jobs retry meanwhile.
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://localhost:8000/health", timeout=3)']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # First start downloads about 1.2 GB into the volume.
+      start_period: 900s
   web:
     build: ./frontend
     ports: ['127.0.0.1:3100:8080']
@@ -86,6 +117,7 @@ services:
       timeout: 5s
       retries: 12
 volumes:
+  embedder-models:
   papers:
   postgres:
   redis:

@@ -96,8 +96,8 @@ def test_index_and_source_scoped_search(client, monkeypatch):
         def question(self, _question):
             return [1.0] + [0.0] * 767
 
-    monkeypatch.setattr(indexing, "GoogleEmbeddings", FakeProvider)
-    monkeypatch.setattr(search, "GoogleEmbeddings", FakeProvider)
+    monkeypatch.setattr(indexing, "provider_for", FakeProvider)
+    monkeypatch.setattr(search, "provider_for", FakeProvider)
     with factory() as db:
         index = indexing.queue_index(db, _owner_id(db, project_id), project_id, document_id, settings)
         index_id = index.id
@@ -158,8 +158,8 @@ def test_hybrid_search_promotes_exact_table_terms_over_semantic_tie(client, monk
         def question(self, _question):
             return [1.0] + [0.0] * 767
 
-    monkeypatch.setattr(indexing, "GoogleEmbeddings", TiedProvider)
-    monkeypatch.setattr(search, "GoogleEmbeddings", TiedProvider)
+    monkeypatch.setattr(indexing, "provider_for", TiedProvider)
+    monkeypatch.setattr(search, "provider_for", TiedProvider)
     with factory() as db:
         index = indexing.queue_index(
             db, _owner_id(db, project_id), project_id, document_id, settings
@@ -228,7 +228,7 @@ def test_manual_index_request_refreshes_stale_reader_then_auto_queues(client):
     with factory() as db:
         paper = db.get(Document, document_id)
         assert paper is not None
-        index = indexing.current_index(db, paper)
+        index = indexing.current_index(db, paper, settings)
         assert index is not None and index.state == "queued"
 
 
@@ -238,9 +238,12 @@ def test_evidence_controls_are_owner_scoped_and_truthful_when_disabled(client):
     document_id = upload(client, project_id).json()["document"]["id"]
     base = f"/api/v1/projects/{project_id}/evidence"
     assert client.get(base + "/capabilities").json() == {
-        "embedding_enabled": False, "answer_enabled": False, "answer_model": "gemini-3.8-flash",
+        "embedding_enabled": False, "embedding_provider": "google", "answer_enabled": False, "answer_model": "gemini-3.8-flash",
+        "search_mode": "keyword", "answer_provider": "google", "answer_daily_limit": 20,
+        "answer_user_daily_limit": 20, "answers_remaining_today": None,
+        "answer_data_policy": "provider_terms",
     }
-    assert client.get(base + "/indexes").json() == {"items": []}
+    assert client.get(base + "/indexes").json() == {"items": []}  # nothing extracted yet
     assert client.post(base + "/answer", headers=csrf(client), json={
         "question": "What happened?", "document_ids": [document_id],
     }).status_code == 503

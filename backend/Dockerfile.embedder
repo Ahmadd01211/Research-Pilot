@@ -1,0 +1,13 @@
+# Internal Qwen3-Embedding service. Builds for linux/amd64 and linux/arm64.
+# Model weights are NOT in the image: they live in the embedder-models volume, fetched once
+# per pinned revision (see app/embedder/models.py), so rebuilds never re-download them.
+FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1     HF_HUB_DISABLE_TELEMETRY=1 HF_HOME=/tmp/hf EMBEDDER_MODEL_ROOT=/models
+WORKDIR /srv
+COPY embedder-requirements.txt .
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.9.1     && pip install --no-cache-dir -r embedder-requirements.txt     && useradd --create-home appuser     && mkdir /models && chown appuser:appuser /models
+COPY app/__init__.py app/__init__.py
+COPY app/embedder app/embedder
+USER appuser
+EXPOSE 8000
+CMD ["uvicorn", "app.embedder.server:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--no-access-log", "--no-proxy-headers"]

@@ -309,6 +309,19 @@
       },
       "Capabilities": {
         "properties": {
+          "answer_daily_limit": {
+            "title": "Answer Daily Limit",
+            "type": "integer"
+          },
+          "answer_data_policy": {
+            "enum": [
+              "no_collection",
+              "collection_allowed",
+              "provider_terms"
+            ],
+            "title": "Answer Data Policy",
+            "type": "string"
+          },
           "answer_enabled": {
             "title": "Answer Enabled",
             "type": "boolean"
@@ -317,15 +330,61 @@
             "title": "Answer Model",
             "type": "string"
           },
+          "answer_provider": {
+            "enum": [
+              "google",
+              "openrouter"
+            ],
+            "title": "Answer Provider",
+            "type": "string"
+          },
+          "answer_user_daily_limit": {
+            "title": "Answer User Daily Limit",
+            "type": "integer"
+          },
+          "answers_remaining_today": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answers Remaining Today"
+          },
           "embedding_enabled": {
             "title": "Embedding Enabled",
             "type": "boolean"
+          },
+          "embedding_provider": {
+            "enum": [
+              "google",
+              "local"
+            ],
+            "title": "Embedding Provider",
+            "type": "string"
+          },
+          "search_mode": {
+            "enum": [
+              "hybrid",
+              "keyword"
+            ],
+            "title": "Search Mode",
+            "type": "string"
           }
         },
         "required": [
           "embedding_enabled",
+          "embedding_provider",
           "answer_enabled",
-          "answer_model"
+          "answer_model",
+          "search_mode",
+          "answer_provider",
+          "answer_daily_limit",
+          "answer_user_daily_limit",
+          "answers_remaining_today",
+          "answer_data_policy"
         ],
         "title": "Capabilities",
         "type": "object"
@@ -1538,6 +1597,15 @@
             "title": "Processed Chunks",
             "type": "integer"
           },
+          "search_mode": {
+            "default": "hybrid",
+            "enum": [
+              "hybrid",
+              "keyword"
+            ],
+            "title": "Search Mode",
+            "type": "string"
+          },
           "state": {
             "title": "State",
             "type": "string"
@@ -2046,6 +2114,7 @@
               "prose",
               "passage",
               "table",
+              "figure",
               "links"
             ],
             "title": "Scope",

@@ -1,5 +1,36 @@
 # ResearchPilot project status
 
+## Local Qwen3 embeddings - 25 November 2026
+
+- Added an embedding provider setting (`RP_EMBEDDING_PROVIDER=local|google`). The `local` provider uses a new internal `embedder` container (compose profile `local-embeddings`) serving open-weights Qwen3-Embedding-0.6B, truncated to 768 dimensions with Matryoshka truncation, so no migration is needed.
+- Index identity now follows the provider spec, so Google and local vectors never mix.
+- The capabilities response reports `embedding_provider`, and the Evidence page tells researchers that local embeddings keep paper text on the server.
+- ADR 0010 records the decision. Hosting target: Oracle Cloud Always Free (ARM64). The image uses CPU PyTorch wheels for amd64 and arm64.
+- Live run on Docker Desktop (amd64, 4 threads):
+  - Model load takes about 20 s. The embedder uses 2.9–3.4 GB RAM under its 4 GB limit.
+  - A question embeds in 0.25 s. A batch of 8 real-size chunks takes 8 s.
+  - The Transformer paper (15 pages, 53 chunks) was indexed automatically 79 s after extraction, and hybrid search returned page-linked hits.
+  - The first live test found that an oversized batch (8 chunks of about 8,000 characters each) was OOM-killed. The embedder now encodes long inputs one at a time, and the worst case finishes in 73 s with no OOM. The service also restarts automatically.
+  - Remaining risk: on slower Oracle ARM cores, that worst case may exceed the 80 s client timeout. It is retried as transient; real chunks are under 1,000 characters.
+- Model weights moved from the image into the `embedder-models` volume:
+  - The image shrank from 4.06 GB to 1.91 GB.
+  - A recreated embedder became healthy in 24 s without downloading again.
+  - A download interrupted by a Docker restart resumed correctly.
+- Development override `compose.dev.yaml` (enable via `COMPOSE_FILE` in `.env`): backend code is mounted read-only, uvicorn reloads, and the worker and dispatcher restart through `watchfiles`. Verified live. Servers must not use it.
+- The frontend test async timeout was raised to 4 s, because cold lazy routes were flaky in full parallel runs.
+
+## First live OpenRouter run - 25 November 2026
+
+The user's key is free tier with 50 requests a day. Of 11 free models, real trials through the app's answer path with the no-data-collection policy found two that work: `baidu/ernie-5.5-flash-preview:free` (correct citations, ignored a distractor, abstained on an unanswerable question, about 2.5 s) and `inclusionai/ling-3.2-flash:free` (correct citations; sometimes throttled upstream). Gemma 4 models were throttled upstream. Nemotron and Particle have no host that meets the no-data-collection policy. The live trial exposed a real bug: the OpenRouter request never stated the answer's field names, so ERNIE answered with `evidence_ids`. Requests now send the JSON schema (structured outputs) and spell the format out in the instructions. Fixed a startup crash when `RP_ANSWER_USER_DAILY_LIMIT` is empty. The local stack runs with ERNIE: an HTTP smoke test uploaded the Transformer paper (15 pages, 53 chunks), ran keyword search and got a cited answer from page 5 via a synthetic account. Backend: 186 tests pass.
+
+## OpenRouter answers and keyword search - 24 November 2026
+
+Research Chat can use OpenRouter (`RP_ANSWER_PROVIDER=openrouter`, server-only `RP_OPENROUTER_API_KEY`) under a server-enforced, app-wide daily answer budget (`RP_ANSWER_DAILY_LIMIT`, default 20; atomic Redis counter per UTC day; questions without evidence spend nothing). Evidence search and chat now work without any embedding provider, using PostgreSQL full-text search over current chunks. Papers show as "Keyword-searchable" and the chat shows the remaining shared answers and which provider receives passages. Hybrid search is unchanged when embeddings are configured. A second code review led to these additions: papers from older readers can be refreshed from the evidence page without embeddings; papers with no eligible evidence are labelled as such; a per-researcher daily share (`RP_ANSWER_USER_DAILY_LIMIT`, set it before opening registration); a no-prompt-collection routing policy by default (`RP_OPENROUTER_ALLOW_DATA_COLLECTION`); exact disclosure of where passages go; and keyword search keeps working when Redis is down. Mock-transport tests only: no real OpenRouter call has been made, so free-model answer quality is unverified. See ADR 0009. Backend Ruff, strict mypy and 185 tests pass; frontend lint, typecheck, 83 tests and build pass.
+
+## Real-paper extraction hardening - 24 November 2026
+
+Ran the production extraction path on 25 public papers from arXiv, PLOS, ACL, NeurIPS, JMLR and NIST. Fixed a schema mismatch that rejected whole papers as "invalid PDF" when any page had a figure-scoped quality finding: 4 of the first 11 papers failed, including BERT and LoRA. Our own layout bugs are now reported as `layout_failure` with content-free diagnostics instead of blaming the PDF. Searchable share of readable body text rose from 88% to 95.8%: a stray undecodable symbol no longer hides its paragraph, and an uncertain figure withholds chart-like passages instead of all page prose (ADR 0008 amended). Parser CPU limit raised from 40 to 90 s after profiling. Quality v5 and chunker v13: existing documents need the explicit reader update. Backend Ruff, strict mypy and 162 tests pass; frontend lint, typecheck, tests and build pass. See `docs/learning/17-real-pdf-hardening.md`. Also fixed two Ruff errors that were already failing on main.
+
 ## Direct evidence and writing navigation - 24 October 2026
 
 The dashboard and sidebar now open Evidence and Writing without visiting a project overview first. With one active project, the action opens that project directly; with several, a short project chooser shows the matching destination. Project cards also link straight to both tasks, and the current-project sidebar keeps them reachable while working. No API or ownership rules changed. Frontend lint, typecheck, production build and all 74 tests passed. Visual browser review remains for the user.

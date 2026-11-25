@@ -2,8 +2,10 @@
 
 This module deliberately does not import Docling. The normal API/worker image
 stays small; a separate worker can consume the candidate page list later.
-Pages that need fallback remain withheld from retrieval until that worker
-publishes output that passes the same source-anchor checks.
+Evidence flagged on such pages (uncertain tables, chart-like text near an
+uncertain figure) remains withheld from retrieval until that worker publishes
+output that passes the same source-anchor checks; unmistakable prose paragraphs
+on figure-uncertain pages stay eligible (ADR 0008 amendment).
 """
 
 from typing import Any  # noqa: I001

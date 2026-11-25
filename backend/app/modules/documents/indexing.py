@@ -11,11 +11,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.config import Settings
 from app.modules.documents.chunks import CHUNKER_VERSION
 from app.modules.documents.embeddings import (
-    DIMENSIONS,
-    FORMAT_VERSION,
-    MODEL,
     EmbeddingFailure,
-    GoogleEmbeddings,
+    embeddings_configured,
+    provider_for,
+    spec_for,
     vector_literal,
 )
 from app.modules.documents.models import (
@@ -35,17 +34,18 @@ MAX_FAILURES = 5
 LEASE_SECONDS = 90
 
 
-def current_index(db: Session, document: Document) -> DocumentIndex | None:
+def current_index(db: Session, document: Document, settings: Settings) -> DocumentIndex | None:
+    spec = spec_for(settings)
     return db.scalar(
         select(DocumentIndex).where(
             DocumentIndex.document_id == document.id,
             DocumentIndex.source_sha256 == document.sha256,
             DocumentIndex.reader_version == READER_VERSION,
             DocumentIndex.chunker_version == CHUNKER_VERSION,
-            DocumentIndex.provider == "google",
-            DocumentIndex.model == MODEL,
-            DocumentIndex.dimensions == DIMENSIONS,
-            DocumentIndex.format_version == FORMAT_VERSION,
+            DocumentIndex.provider == spec.provider,
+            DocumentIndex.model == spec.model,
+            DocumentIndex.dimensions == spec.dimensions,
+            DocumentIndex.format_version == spec.format_version,
         )
     )
 
@@ -53,8 +53,6 @@ def current_index(db: Session, document: Document) -> DocumentIndex | None:
 def queue_index(
     db: Session, owner: UUID, project_id: UUID, document_id: UUID, settings: Settings
 ) -> DocumentIndex | None:
-    if not settings.embedding_enabled or settings.google_api_key is None:
-        raise HTTPException(503, "Research search is not configured")
     project = owned_project(db, owner, project_id, lock=True)
     document = owned_document(db, owner, project_id, document_id)
     if project.archived_at:
@@ -75,7 +73,10 @@ def queue_index(
         job.dispatch_after = datetime.now(UTC)
         db.commit()
         return None
-    existing = current_index(db, document)
+    # Refreshing readable text works in keyword mode; only the embedding index needs a key.
+    if not embeddings_configured(settings):
+        raise HTTPException(503, "Research search is not configured")
+    existing = current_index(db, document, settings)
     if existing is not None:
         return existing
     total = db.scalar(
@@ -89,10 +90,12 @@ def queue_index(
     if not total:
         raise HTTPException(409, "No checked research evidence is available to index")
     now = datetime.now(UTC)
+    spec = spec_for(settings)
     index = DocumentIndex(
         id=uuid4(), document_id=document.id, source_sha256=document.sha256,
         reader_version=READER_VERSION, chunker_version=CHUNKER_VERSION,
-        provider="google", model=MODEL, dimensions=DIMENSIONS, format_version=FORMAT_VERSION,
+        provider=spec.provider, model=spec.model, dimensions=spec.dimensions,
+        format_version=spec.format_version,
         state="queued", attempts=0, lease_token=None, lease_until=None,
         dispatch_after=now, error_code=None, processed_chunks=0, total_chunks=total,
         created_at=now, completed_at=None,
@@ -109,12 +112,12 @@ def queue_after_extraction(db: Session, document: Document, settings: Settings) 
     embeddable evidence chunks. The extraction itself remains successful either way.
     The caller owns the transaction and commit.
     """
-    if not settings.embedding_enabled or settings.google_api_key is None:
+    if not embeddings_configured(settings):
         return None
     first = db.get(DocumentPageText, (document.id, 1))
     if first is None or not first.layout or first.layout.get("version") != READER_VERSION:
         return None
-    existing = current_index(db, document)
+    existing = current_index(db, document, settings)
     if existing is not None:
         return existing
     total = db.scalar(
@@ -128,10 +131,12 @@ def queue_after_extraction(db: Session, document: Document, settings: Settings) 
     if not total:
         return None
     now = datetime.now(UTC)
+    spec = spec_for(settings)
     index = DocumentIndex(
         id=uuid4(), document_id=document.id, source_sha256=document.sha256,
         reader_version=READER_VERSION, chunker_version=CHUNKER_VERSION,
-        provider="google", model=MODEL, dimensions=DIMENSIONS, format_version=FORMAT_VERSION,
+        provider=spec.provider, model=spec.model, dimensions=spec.dimensions,
+        format_version=spec.format_version,
         state="queued", attempts=0, lease_token=None, lease_until=None,
         dispatch_after=now, error_code=None, processed_chunks=0, total_chunks=total,
         created_at=now, completed_at=None,
@@ -303,7 +308,7 @@ def run_index(factory: sessionmaker[Session], settings: Settings, index_id: UUID
         return
     token, rows = claimed
     try:
-        with GoogleEmbeddings(settings) as provider:
+        with provider_for(settings) as provider:
             vectors = provider.documents([source_text for _, source_text in rows])
         finish(factory, index_id, token, list(zip([row[0] for row in rows], vectors, strict=True)), None)
     except EmbeddingFailure as failure:
