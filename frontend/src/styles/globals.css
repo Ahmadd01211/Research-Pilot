@@ -75,6 +75,7 @@
 .evidence-paper-choice{display:flex;align-items:start;gap:10px;cursor:pointer;min-width:0}
 .evidence-paper-choice input{margin-top:5px;accent-color:var(--blue)}
 .evidence-paper-choice span{min-width:0}
+.index-progress{display:block;width:100%;max-width:240px;height:6px;margin-top:6px;accent-color:var(--blue)}
 .evidence-paper-choice strong{display:block;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
 .evidence-paper-choice small{display:block;margin-top:5px;color:var(--muted);line-height:1.5}
 .chat-source-excerpts{display:grid;gap:10px;margin-top:14px}

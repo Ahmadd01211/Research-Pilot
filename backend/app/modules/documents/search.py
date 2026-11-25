@@ -1,6 +1,8 @@
 """Owner-scoped vector retrieval returning inspectable source evidence."""
 
+import logging
 import re
+from typing import Literal
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -28,6 +30,8 @@ from app.modules.documents.reader import READER_VERSION
 from app.modules.documents.service import owned as owned_document
 from app.modules.projects.service import owned as owned_project
 
+log = logging.getLogger(__name__)
+
 
 class SearchRequest(BaseModel):
     question: str = Field(min_length=1, max_length=500)
@@ -48,10 +52,20 @@ class SearchHit(BaseModel):
     distance: float
 
 
+class SkippedDocument(BaseModel):
+    document_id: UUID
+    reason: Literal["indexing", "not_indexed", "index_failed"]
+
+
 class SearchResponse(BaseModel):
     hits: list[SearchHit]
     model: str
     index_format: str
+    # hybrid: vectors + keywords. keyword: embeddings are off. keyword_fallback: the
+    # embedding service was unavailable, so only keyword matching ran (may miss paraphrases).
+    retrieval: Literal["hybrid", "keyword", "keyword_fallback"] = "hybrid"
+    # Selected papers that were not searched, and why; never silently dropped.
+    skipped_documents: list[SkippedDocument] = Field(default_factory=list)
 
 
 RRF_CONSTANT = 60
@@ -175,6 +189,7 @@ def _keyword_search(
         hits=distinct_evidence([SearchHit.model_validate(dict(row)) for row in rows], request.limit),
         model=KEYWORD_MODEL,
         index_format=KEYWORD_FORMAT,
+        retrieval="keyword",
     )
 
 
@@ -189,21 +204,42 @@ def search(
         return _keyword_search(db, owner, project_id, request)
     owned_project(db, owner, project_id)
     indexes = []
+    ready: list[UUID] = []
+    skipped: list[SkippedDocument] = []
     for document_id in request.document_ids:
         document = owned_document(db, owner, project_id, document_id)
         index = current_index(db, document, settings)
-        if index is None or index.state != "ready" or index.processed_chunks != index.total_chunks:
-            raise HTTPException(409, "Index the selected papers before searching")
-        indexes.append(index.id)
+        if index is not None and index.state == "ready" and index.processed_chunks == index.total_chunks:
+            indexes.append(index.id)
+            ready.append(document_id)
+        else:
+            skipped.append(SkippedDocument(
+                document_id=document_id,
+                reason="not_indexed" if index is None
+                else "index_failed" if index.state in {"failed", "cancelled"} else "indexing",
+            ))
+    if not ready:
+        raise HTTPException(
+            409, "None of the selected papers is ready yet: they are still indexing or not indexed."
+        )
     # Release the read transaction during the external request. Recheck ownership afterward.
     db.rollback()
     try:
         with provider_for(settings) as provider:
             vector = provider.question(request.question)
     except EmbeddingFailure as error:
-        raise HTTPException(503 if error.transient else 502, "Search provider is unavailable") from error
+        if not error.transient:
+            raise HTTPException(502, "Search provider returned an unusable response") from error
+        # Outage: keyword matching over the same ready papers, explicitly labelled.
+        log.warning("search_keyword_fallback reason=%s", error.code)
+        fallback = _keyword_search(db, owner, project_id, request.model_copy(
+            update={"document_ids": ready}
+        ))
+        return fallback.model_copy(update={
+            "retrieval": "keyword_fallback", "skipped_documents": skipped,
+        })
     owned_project(db, owner, project_id)
-    for document_id in request.document_ids:
+    for document_id in ready:
         document = owned_document(db, owner, project_id, document_id)
         index = current_index(db, document, settings)
         if index is None or index.id not in indexes or index.state != "ready":
@@ -253,4 +289,5 @@ def search(
         hits=distinct_evidence([SearchHit.model_validate(dict(row)) for row in rows], request.limit),
         model=settings.embedding_model,
         index_format=spec_for(settings).format_version,
+        skipped_documents=skipped,
     )

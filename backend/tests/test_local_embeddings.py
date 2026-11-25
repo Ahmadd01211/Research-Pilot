@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from app.core.config import Settings
 from app.embedder import contract
-from app.embedder.server import batch_size, create_app
+from app.embedder.server import create_app, slices
 from app.modules.documents import embeddings, indexing
 from app.modules.documents.chunks import CHUNKER_VERSION
 from app.modules.documents.embeddings import EmbeddingFailure, LocalEmbeddings
@@ -81,10 +81,8 @@ def test_embedder_rejects_unbounded_input(texts):
 
 def test_long_inputs_are_encoded_one_at_a_time_to_bound_memory():
     # Live finding: 8 near-limit chunks in one forward pass exceeded a 4 GB limit (OOM kill).
-    assert batch_size(["short passage"] * 8) == 8
-    assert batch_size(["x" * 1000] * 8) == 8
-    assert batch_size(["x" * 8000] + ["short"] * 7) == 1
-    assert batch_size(["x" * 2000] * 8) == 1
+    assert slices(["x" * 8000] + ["short"] * 7)[0] == ["x" * 8000]
+    assert all(len(part) == 1 for part in slices(["x" * 2000] * 8))
 
 
 def test_embedder_refuses_invalid_model_output():

@@ -1,5 +1,16 @@
 # ResearchPilot project status
 
+## Search resilience - 25 November 2026
+
+- **Partial search:** search uses the ready papers and names the rest in `skipped_documents` (indexing, not indexed, or index failed). It returns 409 only when no selected paper is ready.
+- **Embedder outage:** search falls back to keyword matching, labelled `retrieval: keyword_fallback`. The UI says semantic search is temporarily unavailable. A malformed vector response is still a 502.
+- **Question priority:** the embedder encodes documents in slices of about 2,000 characters, and waiting questions run before waiting document slices.
+- **Live measurements:**
+  - While the GPT-3 paper (314 chunks) indexed, searches took 0.5–3 s, with one 10 s outlier as indexing began. Previously a search waited behind whole batches (8–70 s).
+  - With the embedder stopped, search returned labelled keyword results in 4 s.
+- **Evidence page:** indexing papers show a progress bar, and search results and answers show these caveats.
+- **Test-script note:** Python `urllib` on Windows spends 2 s trying IPv6 for `localhost`. Probe scripts use `127.0.0.1`. Browsers and curl are unaffected.
+
 ## Local Qwen3 embeddings - 25 November 2026
 
 - Added an embedding provider setting (`RP_EMBEDDING_PROVIDER=local|google`). The `local` provider uses a new internal `embedder` container (compose profile `local-embeddings`) serving open-weights Qwen3-Embedding-0.6B, truncated to 768 dimensions with Matryoshka truncation, so no migration is needed.

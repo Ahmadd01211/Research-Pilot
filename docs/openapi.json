@@ -115,12 +115,29 @@
             "title": "Model",
             "type": "string"
           },
+          "retrieval": {
+            "default": "hybrid",
+            "enum": [
+              "hybrid",
+              "keyword",
+              "keyword_fallback"
+            ],
+            "title": "Retrieval",
+            "type": "string"
+          },
           "selected_document_ids": {
             "items": {
               "format": "uuid",
               "type": "string"
             },
             "title": "Selected Document Ids",
+            "type": "array"
+          },
+          "skipped_documents": {
+            "items": {
+              "$ref": "#/components/schemas/SkippedDocument"
+            },
+            "title": "Skipped Documents",
             "type": "array"
           },
           "sources": {
@@ -2935,6 +2952,23 @@
           "model": {
             "title": "Model",
             "type": "string"
+          },
+          "retrieval": {
+            "default": "hybrid",
+            "enum": [
+              "hybrid",
+              "keyword",
+              "keyword_fallback"
+            ],
+            "title": "Retrieval",
+            "type": "string"
+          },
+          "skipped_documents": {
+            "items": {
+              "$ref": "#/components/schemas/SkippedDocument"
+            },
+            "title": "Skipped Documents",
+            "type": "array"
           }
         },
         "required": [
@@ -2943,6 +2977,30 @@
           "index_format"
         ],
         "title": "SearchResponse",
+        "type": "object"
+      },
+      "SkippedDocument": {
+        "properties": {
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "indexing",
+              "not_indexed",
+              "index_failed"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "reason"
+        ],
+        "title": "SkippedDocument",
         "type": "object"
       },
       "SourceFigure": {

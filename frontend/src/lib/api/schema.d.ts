@@ -845,8 +845,16 @@ export interface components {
             insufficient_evidence: boolean;
             /** Model */
             model: string;
+            /**
+             * Retrieval
+             * @default hybrid
+             * @enum {string}
+             */
+            retrieval: "hybrid" | "keyword" | "keyword_fallback";
             /** Selected Document Ids */
             selected_document_ids?: string[];
+            /** Skipped Documents */
+            skipped_documents?: components["schemas"]["SkippedDocument"][];
             /** Sources */
             sources: components["schemas"]["AnswerSource"][];
             /** Statements */
@@ -1943,6 +1951,27 @@ export interface components {
             index_format: string;
             /** Model */
             model: string;
+            /**
+             * Retrieval
+             * @default hybrid
+             * @enum {string}
+             */
+            retrieval: "hybrid" | "keyword" | "keyword_fallback";
+            /** Skipped Documents */
+            skipped_documents?: components["schemas"]["SkippedDocument"][];
+        };
+        /** SkippedDocument */
+        SkippedDocument: {
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "indexing" | "not_indexed" | "index_failed";
         };
         /** SourceFigure */
         SourceFigure: {

@@ -4,6 +4,7 @@ import json
 import logging
 import re
 from datetime import UTC, datetime
+from typing import Literal
 from uuid import UUID, uuid4
 
 import httpx
@@ -17,7 +18,12 @@ from app.core.config import Settings
 from app.modules.documents import budget
 from app.modules.documents.models import ResearchChatThread, ResearchChatTurn
 from app.modules.documents.provider_usage import record_usage
-from app.modules.documents.search import SearchHit, SearchRequest, search
+from app.modules.documents.search import (
+    SearchHit,
+    SearchRequest,
+    SkippedDocument,
+    search,
+)
 from app.modules.documents.service import owned as owned_document
 from app.modules.projects.service import owned as owned_project
 
@@ -71,6 +77,8 @@ class AnswerResponse(BaseModel):
     selected_document_ids: list[UUID] = Field(default_factory=list)
     thread_id: UUID | None = None
     turn_id: UUID | None = None
+    retrieval: Literal["hybrid", "keyword", "keyword_fallback"] = "hybrid"
+    skipped_documents: list[SkippedDocument] = Field(default_factory=list)
 
 
 def _prompt(question: str, sources: list[AnswerSource], history: list[dict[str, object]]) -> str:
@@ -276,6 +284,8 @@ def answer(db: Session, owner: UUID, project_id: UUID,
             model=settings.answer_model,
             selected_document_ids=request.document_ids,
             thread_id=request.thread_id,
+            retrieval=result.retrieval,
+            skipped_documents=result.skipped_documents,
         )
         return _persist_turn(db, owner, project_id, thread, request.question, response)
     db.rollback()
@@ -293,6 +303,8 @@ def answer(db: Session, owner: UUID, project_id: UUID,
         model=settings.answer_model,
         selected_document_ids=request.document_ids,
         thread_id=request.thread_id,
+        retrieval=result.retrieval,
+        skipped_documents=result.skipped_documents,
     )
     return _persist_turn(db, owner, project_id, thread, request.question, response)
 

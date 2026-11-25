@@ -86,3 +86,12 @@ Owned GET /api/v1/projects/{project_id}/documents/{document_id}/quality returns 
 Owner-scoped `GET /api/v1/projects/{project_id}/references/bibliography` returns a limited, read-only bibliography preview in the project's saved style (`apa7`, `mla9` or `chicago18`): `style`, `style_label`, `preview: true`, `limitations`, and `items` holding `reference_id`, plain `text`, `segments` (`text`, `italic`) and per-entry `warnings`. Removed references are excluded. Ordering is deterministic. The endpoint performs no writes or external requests. Foreign or removed projects return 404.
 
 Owner-scoped `POST /api/v1/projects/{project_id}/exports` accepts `reference_csv`, `reference_xlsx`, `draft_markdown` and `draft_docx`. Draft formats require the selected draft ID and its current revision; reference formats require neither. A request UUID makes retries idempotent. `GET .../exports` lists immutable snapshots, and `GET .../exports/{export_id}/download` returns the original bytes as an attachment. Migration 0015 extends the allowed export kinds; file and project history limits are unchanged.
+
+Search and answer responses also report how retrieval ran:
+- `retrieval`:
+  - `hybrid`: vectors plus keywords.
+  - `keyword`: embeddings are off.
+  - `keyword_fallback`: the embedding service was unavailable, so only keyword matching ran over the ready papers.
+- `skipped_documents`: selected papers that were not searched, each with a `reason` of `indexing`, `not_indexed` or `index_failed`.
+
+If none of the selected papers is ready, search returns 409. A malformed embedding response is a 502, never a fallback.

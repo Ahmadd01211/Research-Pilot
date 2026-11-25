@@ -9,7 +9,7 @@ const projectId = '11111111-1111-4111-8111-111111111111';
 const paperId = '22222222-2222-4222-8222-222222222222';
 afterEach(() => vi.unstubAllGlobals());
 
-type Caps = { embedding_enabled: boolean; embedding_provider?: 'google' | 'local'; answer_enabled: boolean; search_mode: 'hybrid' | 'keyword'; answer_model?: string; answers_remaining_today?: number | null; answer_daily_limit?: number; answer_user_daily_limit?: number; answer_data_policy?: string; paperState?: string };
+type Caps = { embedding_enabled: boolean; embedding_provider?: 'google' | 'local'; answer_enabled: boolean; search_mode: 'hybrid' | 'keyword'; answer_model?: string; answers_remaining_today?: number | null; answer_daily_limit?: number; answer_user_daily_limit?: number; answer_data_policy?: string; paperState?: string; searchExtra?: Record<string, unknown> };
 const hybrid: Caps = { embedding_enabled: true, answer_enabled: true, search_mode: 'hybrid', answer_model: 'gemini-3.8-flash', answers_remaining_today: 20, answer_daily_limit: 20 };
 const keywordOnly: Caps = { embedding_enabled: false, answer_enabled: false, search_mode: 'keyword', answers_remaining_today: null, answer_daily_limit: 20 };
 function open(caps: Caps | boolean, chat = false) {
@@ -23,7 +23,7 @@ function open(caps: Caps | boolean, chat = false) {
     if (url.endsWith('/evidence/threads/thread-one') || url.endsWith('/evidence/threads/thread-two')) return Promise.resolve(Response.json({ turns: [] }));
     if (url.endsWith('/evidence/indexes')) return Promise.resolve(Response.json({ items: enabled ? [{ document_id: paperId, state: capabilities.paperState ?? 'ready', processed_chunks: 2, total_chunks: 2, error_code: null, search_mode: capabilities.search_mode }] : [] }));
     if (url.includes('/documents?')) return Promise.resolve(Response.json({ items: [{ id: paperId, filename: 'Evidence.pdf', status: 'extracted' }], total: 1 }));
-    if (url.endsWith('/evidence/search') && init?.method === 'POST') return Promise.resolve(Response.json({ model: 'gemini-embedding-2', index_format: 'gemini2-qa-v1:l2', hits: [{ chunk_id: 'chunk-1', document_id: paperId, source_sha256: 'abc', reader_version: 'reader-v1', page_number: 9, kind: 'prose', source_id: 'passage-2', text: 'Adoption varied by firm size.', source_metadata: { passage_id: 'passage-2' }, distance: 0.2 }] }));
+    if (url.endsWith('/evidence/search') && init?.method === 'POST') return Promise.resolve(Response.json({ model: 'gemini-embedding-2', index_format: 'gemini2-qa-v1:l2', hits: [{ chunk_id: 'chunk-1', document_id: paperId, source_sha256: 'abc', reader_version: 'reader-v1', page_number: 9, kind: 'prose', source_id: 'passage-2', text: 'Adoption varied by firm size.', source_metadata: { passage_id: 'passage-2' }, distance: 0.2 }], ...capabilities.searchExtra }));
     return Promise.resolve(Response.json({ id: projectId, title: 'AI adoption', archived_at: null }));
   });
   vi.stubGlobal('fetch', mock);
@@ -41,6 +41,30 @@ it('offers keyword search without embeddings and never offers indexing', async (
   await ui.click(screen.getByRole('button', { name: 'Find evidence' }));
   expect(await screen.findByText('Adoption varied by firm size.')).toBeVisible();
   expect(mock.mock.calls.some(([url, init]) => url.endsWith('/evidence/search') && init?.method === 'POST')).toBe(true);
+});
+
+it('shows live indexing progress for a paper that is not ready yet', async () => {
+  open({ ...hybrid, paperState: 'processing' });
+  const bar = await screen.findByRole('progressbar', { name: 'Indexing Evidence.pdf' });
+  expect(bar).toHaveAttribute('value', '2');
+  expect(bar).toHaveAttribute('max', '2');
+});
+
+it('labels keyword-only results when semantic search is unavailable', async () => {
+  open({ ...hybrid, searchExtra: { retrieval: 'keyword_fallback', model: 'postgres-full-text' } }); const ui = userEvent.setup();
+  await ui.click(await screen.findByRole('checkbox'));
+  await ui.type(screen.getByLabelText('Research question'), 'How did adoption vary?');
+  await ui.click(screen.getByRole('button', { name: 'Find evidence' }));
+  expect(await screen.findByText(/Semantic search is temporarily unavailable/)).toBeVisible();
+  expect(screen.getByText('Adoption varied by firm size.')).toBeVisible();
+});
+
+it('names selected papers that were not searched and why', async () => {
+  open({ ...hybrid, searchExtra: { skipped_documents: [{ document_id: paperId, reason: 'indexing' }] } }); const ui = userEvent.setup();
+  await ui.click(await screen.findByRole('checkbox'));
+  await ui.type(screen.getByLabelText('Research question'), 'How did adoption vary?');
+  await ui.click(screen.getByRole('button', { name: 'Find evidence' }));
+  expect(await screen.findByText(/Not searched: Evidence.pdf \(still indexing\)/)).toBeVisible();
 });
 
 it('tells researchers that local embeddings keep paper text on this server', async () => {
